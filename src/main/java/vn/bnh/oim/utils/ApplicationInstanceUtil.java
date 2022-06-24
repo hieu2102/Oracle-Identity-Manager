@@ -43,18 +43,16 @@ public class ApplicationInstanceUtil {
     }
 
     public static void retryAccountProvision(Account resourceAcct) throws tcAPIException, tcColumnNotFoundException, tcTaskNotFoundException {
-        String accountId = resourceAcct.getAccountID(); // OIU_KEY
         String procInstFormKey = resourceAcct.getProcessInstanceKey(); // (ORC_KEY) Process Form Instance Key
         String appInstName = resourceAcct.getAppInstance().getApplicationInstanceName(); // Application Instance Name
         HashMap<String, String> filter = new HashMap<>();
         filter.put("Objects.Name", appInstName);
+        filter.put("Process Instance.Key", procInstFormKey);
         filter.put("Process Definition.Tasks.Task Name", "Create User");
         tcResultSet results = provisioningOperationsIntf.findAllOpenProvisioningTasks(filter, new String[]{"Rejected"});
-        int rows = results.getTotalRowCount();
         if (results.getTotalRowCount() > 0) {
             results.goToRow(0);
             provisioningOperationsIntf.retryTask(results.getLongValue("Process Instance.Task Details.Key"));
-//            System.out.println(results.getStringValue("Process Definition.Tasks.Task Name"));
         }
     }
 }
