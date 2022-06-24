@@ -1,3 +1,6 @@
+import Thor.API.Exceptions.tcAPIException;
+import Thor.API.Exceptions.tcColumnNotFoundException;
+import Thor.API.Exceptions.tcTaskNotFoundException;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.identity.exception.NoSuchUserException;
 import oracle.iam.identity.exception.UserLookupException;
@@ -32,6 +35,11 @@ public class OIMUtilTest {
         OIMUtil oim = new OIMUtil("10.10.11.54", "14000", "xelsysadm", "oracle_4U");
         User user = UserUtil.getUser("USER@ORACLE.COM");
         ApplicationInstanceUtil.getProvisioningAccountsForUser(user, "TRM").forEach(x -> {
+            try {
+                ApplicationInstanceUtil.retryAccountProvision(x);
+            } catch (tcAPIException | tcColumnNotFoundException | tcTaskNotFoundException e) {
+                throw new RuntimeException(e);
+            }
             assert "TRM".equals(x.getAppInstance().getApplicationInstanceName());
         });
 

@@ -31,6 +31,7 @@ public class OIMUtil {
     static RoleManager roleService = null;
     static OrganizationManager orgService = null;
     static ProvisioningService provisioningService = null;
+    static TaskDefinitionOperationsIntf taskDefOps = null;
 
     public OIMUtil() {
         this.initialize();
@@ -74,6 +75,7 @@ public class OIMUtil {
         orgService = oimClient.getService(OrganizationManager.class);
         formInstanceIntf = oimClient.getService(tcFormInstanceOperationsIntf.class);
         provisioningService = oimClient.getService(ProvisioningService.class);
+        taskDefOps = oimClient.getService(TaskDefinitionOperationsIntf.class);
 
     }
 
@@ -91,6 +93,7 @@ public class OIMUtil {
             orgService = Platform.getService(OrganizationManager.class);
             formInstanceIntf = Platform.getService(tcFormInstanceOperationsIntf.class);
             provisioningService = Platform.getService(ProvisioningService.class);
+            taskDefOps = Platform.getService(TaskDefinitionOperationsIntf.class);
         }
     }
 }

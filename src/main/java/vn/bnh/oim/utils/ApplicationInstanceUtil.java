@@ -1,6 +1,11 @@
 package vn.bnh.oim.utils;
 
+import Thor.API.Exceptions.tcAPIException;
+import Thor.API.Exceptions.tcColumnNotFoundException;
+import Thor.API.Exceptions.tcTaskNotFoundException;
+import Thor.API.Operations.TaskDefinitionOperationsIntf;
 import Thor.API.Operations.tcProvisioningOperationsIntf;
+import Thor.API.tcResultSet;
 import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.platform.entitymgr.vo.SearchCriteria;
 import oracle.iam.provisioning.api.ProvisioningConstants;
@@ -17,7 +22,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ApplicationInstanceUtil {
-    private final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.provisioningOperationsIntf;
+    private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.provisioningOperationsIntf;
+    private static final TaskDefinitionOperationsIntf taskDefOps = OIMUtil.taskDefOps;
     private static final ProvisioningService provisioningService = OIMUtil.provisioningService;
 
     public static List<Account> getProvisioningAccountsForUser(User user, String appInstanceName) throws UserNotFoundException, GenericProvisioningException {
@@ -34,5 +40,21 @@ public class ApplicationInstanceUtil {
         modifiedAccount.setAppInstance(account.getAppInstance());
         provisioningService.modify(modifiedAccount);
         return modifiedAccount;
+    }
+
+    public static void retryAccountProvision(Account resourceAcct) throws tcAPIException, tcColumnNotFoundException, tcTaskNotFoundException {
+        String accountId = resourceAcct.getAccountID(); // OIU_KEY
+        String procInstFormKey = resourceAcct.getProcessInstanceKey(); // (ORC_KEY) Process Form Instance Key
+        String appInstName = resourceAcct.getAppInstance().getApplicationInstanceName(); // Application Instance Name
+        HashMap<String, String> filter = new HashMap<>();
+        filter.put("Objects.Name", appInstName);
+        filter.put("Process Definition.Tasks.Task Name", "Create User");
+        tcResultSet results = provisioningOperationsIntf.findAllOpenProvisioningTasks(filter, new String[]{"Rejected"});
+        int rows = results.getTotalRowCount();
+        if (results.getTotalRowCount() > 0) {
+            results.goToRow(0);
+            provisioningOperationsIntf.retryTask(results.getLongValue("Process Instance.Task Details.Key"));
+//            System.out.println(results.getStringValue("Process Definition.Tasks.Task Name"));
+        }
     }
 }
