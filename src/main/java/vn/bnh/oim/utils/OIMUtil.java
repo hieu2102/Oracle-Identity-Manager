@@ -19,7 +19,7 @@ import java.util.Hashtable;
 
 
 public class OIMUtil {
-    private final ODLLogger logger = ODLLogger.getODLLogger(OIMUtil.class.getName());
+    private static final ODLLogger logger = ODLLogger.getODLLogger(OIMUtil.class.getName());
     static tcUserOperationsIntf userOperationsintf = null;
     static tcFormInstanceOperationsIntf formInstanceOperationsIntf = null;
     static tcProvisioningOperationsIntf provisioningOperationsIntf = null;
