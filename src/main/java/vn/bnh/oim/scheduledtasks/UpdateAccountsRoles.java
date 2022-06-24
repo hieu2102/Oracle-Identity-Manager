@@ -1,14 +1,19 @@
 package vn.bnh.oim.scheduledtasks;
 
+import Thor.API.Exceptions.tcAPIException;
+import Thor.API.Exceptions.tcColumnNotFoundException;
+import Thor.API.Exceptions.tcTaskNotFoundException;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
+import oracle.iam.provisioning.exception.AccountNotFoundException;
+import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.vo.Account;
+import oracle.iam.provisioning.vo.ChildTableRecord;
 import oracle.iam.scheduler.vo.TaskSupport;
 import vn.bnh.oim.utils.ApplicationInstanceUtil;
 import vn.bnh.oim.utils.OIMUtil;
 
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("rawtypes")
 public class UpdateAccountsRoles extends TaskSupport {
@@ -25,8 +30,32 @@ public class UpdateAccountsRoles extends TaskSupport {
         logger.log(ODLLevel.INFO, "Get all accounts in PROVISIONING states for Application Instance {0}", APP_INST_NAME);
         Set<Account> accountList = ApplicationInstanceUtil.getProvisioningAccount(APP_INST_NAME);
         accountList.forEach(account -> {
-            
+            Map<String, Object> accountData = account.getAccountData().getData();
+            Set<String> processedRoleData = new HashSet<>();
+            ArrayList<ChildTableRecord> childFormRows = account.getAccountData().getChildData().get(CHILD_PROCESS_FORM_NAME);
+            childFormRows.forEach(row -> {
+                Map<String, Object> childData = row.getChildData();
+                processedRoleData.add(processChildData(PARENT_PROCESS_FORM_ROLE_FIELD_FORMAT, childData));
+            });
+            String updatedRoleData = String.join(",", processedRoleData);
+            accountData.put(PARENT_PROCESS_FORM_ROLE_FIELD, updatedRoleData);
+            try {
+                Account modifiedAccount = ApplicationInstanceUtil.updateAccountData(account, accountData);
+                ApplicationInstanceUtil.retryAccountProvision(modifiedAccount);
+            } catch (GenericProvisioningException | AccountNotFoundException | tcAPIException |
+                     tcColumnNotFoundException | tcTaskNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         });
+    }
+
+    protected static String processChildData(String format, Map<String, Object> childData) {
+        String output = format;
+        for (Map.Entry<String, Object> entry : childData.entrySet()) {
+            String stringToReplace = String.format("\\$\\(%s\\)\\$", entry.getKey());
+            output = output.replaceFirst(stringToReplace, String.valueOf(entry.getValue()));
+        }
+        return output;
     }
 
     @Override
@@ -41,6 +70,6 @@ public class UpdateAccountsRoles extends TaskSupport {
         this.PARENT_PROCESS_FORM_ROLE_FIELD_FORMAT = this.ScheduledTaskInputParams.get("Role Field's Format").toString();
         this.CHILD_PROCESS_FORM_NAME = this.ScheduledTaskInputParams.get("Child Process Form's Name").toString();
 //        initialize OIMUTil
-        OIMUtil oimUtil = new OIMUtil();
+        OIMUtil.initialize();
     }
 }
