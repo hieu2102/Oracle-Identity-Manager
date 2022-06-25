@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<oimplugins>
+    <plugins pluginpoint="oracle.iam.scheduler.vo.TaskSupport">
+        <plugin pluginclass="vn.bnh.oim.scheduledtasks.UpdateAccountsRoles" version="1.0" name="UpdateAccountsRoles"/>
+    </plugins>
+</oimplugins>
