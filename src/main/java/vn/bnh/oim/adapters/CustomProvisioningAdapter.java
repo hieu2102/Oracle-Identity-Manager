@@ -27,7 +27,7 @@ import org.identityconnectors.framework.common.objects.*;
 import java.sql.Timestamp;
 import java.util.*;
 
-@SuppressWarnings({"rawtypes", "unused"})
+@SuppressWarnings({"rawtypes", "unused", "ToArrayCallWithZeroLengthArrayArgument"})
 public final class CustomProvisioningAdapter implements ProvisioningManager {
     private static final Log LOG = Log.getLog(oracle.iam.connectors.icfcommon.prov.ICProvisioningManager.class);
     private static final String PROVISIONING_LOOKUP_PROPERTY_NAME = "Provisioning Attribute Map";
@@ -394,33 +394,33 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     private Form getCurrentForm(Form form, Map<String, String> oldFields) {
         if (this.currentForm == null) {
-            Set<Form.FieldInfo> fieldInfos = form.getFieldInfo();
+            Set<Form.FieldInfo> fieldInfo = form.getFieldInfo();
             Map<String, String> fieldValues = new HashMap<>(form.getFieldValues());
             Map<String, String> fieldValuesByLabel = new HashMap<>(form.getFieldValuesByLabel());
 
             for (Map.Entry<String, String> oldField : oldFields.entrySet()) {
                 String fieldName = oldField.getKey();
-                String fieldLabel = getFieldInfoByName(fieldInfos, fieldName).getLabel();
+                String fieldLabel = getFieldInfoByName(fieldInfo, fieldName).getLabel();
                 fieldValues.put(fieldName, oldField.getValue());
                 fieldValuesByLabel.put(fieldLabel, oldField.getValue());
             }
 
-            this.currentForm = new Form(fieldValues, fieldValuesByLabel, fieldInfos, form.getChildFormFieldValues());
+            this.currentForm = new Form(fieldValues, fieldValuesByLabel, fieldInfo, form.getChildFormFieldValues());
         }
 
         return this.currentForm;
     }
 
-    private static Form.FieldInfo getFieldInfoByName(Set<Form.FieldInfo> fieldInfos, String fieldName) {
-        Iterator<Form.FieldInfo> var2 = fieldInfos.iterator();
+    private static Form.FieldInfo getFieldInfoByName(Set<Form.FieldInfo> fieldInfoSet, String fieldName) {
+        Iterator<Form.FieldInfo> fieldInfoIterator = fieldInfoSet.iterator();
 
         Form.FieldInfo fieldInfo;
         do {
-            if (!var2.hasNext()) {
+            if (!fieldInfoIterator.hasNext()) {
                 throw new IllegalArgumentException("Invalid field name [" + fieldName + "] provided");
             }
 
-            fieldInfo = var2.next();
+            fieldInfo = fieldInfoIterator.next();
         } while (!fieldName.equals(fieldInfo.getName()));
 
         return fieldInfo;
@@ -445,7 +445,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    public String updatePassword(String objectType, String pswdFieldLabel, String oldPassword) {
+    public String updatePassword(String objectType, String passwordFieldLabel, String oldPassword) {
         LOG.ok("Enter");
 
         try {
@@ -455,7 +455,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
-            Set<Attribute> attributes = provEvent.buildSingleAttributes(pswdFieldLabel);
+            Set<Attribute> attributes = provEvent.buildSingleAttributes(passwordFieldLabel);
             this.addProvidedOnPasswordChange(provEvent, attributes);
             if (oldPassword != null) {
                 GuardedString currentPassword = new GuardedString(oldPassword.toCharArray());
@@ -497,9 +497,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         assert names != null;
 
         Set<String> labels = new HashSet<>();
-        Set<Form.FieldInfo> fieldInfos = this.form.getFieldInfo();
+        Set<Form.FieldInfo> fieldInfoSet = this.form.getFieldInfo();
 
-        for (Form.FieldInfo fieldInfo : fieldInfos) {
+        for (Form.FieldInfo fieldInfo : fieldInfoSet) {
             if (names.contains(fieldInfo.getName())) {
                 labels.add(fieldInfo.getLabel());
             }
@@ -595,7 +595,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
             for (FieldMapping fieldMapping : writeBackFieldMappings) {
                 if (!fieldMapping.isChildForm()) {
-                    LOG.ok(" adding parent fieldmap[{0}]", fieldMapping);
+                    LOG.ok("adding parent field map [{0}]", fieldMapping);
                     parentWriteBackFieldMappings.add(fieldMapping);
                 } else if (fieldMapping.isEmbeddedObject() && this.formQuery.getType().equals(Type.ADD)) {
                     List<Map<String, String>> addedChildRows = this.form.getChildFormFieldValuesByColumn(fieldMapping.getChildForm());
@@ -604,7 +604,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
                         String writeBackColName = this.getWriteBackColumnNameByLabel(fieldMapping.getFieldLabel());
                         String writeBackColValue = addedChildRow.get(writeBackColName);
                         if (StringUtil.isNotBlank(writeBackColValue) && !writeBackColValue.equals("0")) {
-                            LOG.warn("Writeback child column: {0} has a non-zero value: {1}. Assuming that writeback has already happened for this row, ignoring writeback now", writeBackColName, writeBackColValue);
+                            LOG.warn("Write back child column: {0} has a non-zero value: {1}. Assuming that write back has already happened for this row, ignoring write back now", writeBackColName, writeBackColValue);
                         } else {
                             childWriteBackFieldMappings.add(fieldMapping);
                         }
@@ -616,14 +616,14 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             LOG.ok(" Parent write back filed mappings are [{0}]", parentWriteBackFieldMappings);
             attributesToGet.addAll(getAttributesToGet(childWriteBackFieldMappings));
             if (attributesToGet.isEmpty()) {
-                LOG.warn("No writeback attributes to be fetched from the connector. Exiting writeback");
+                LOG.warn("No write back attributes to be fetched from the connector. Exiting write back");
                 LOG.ok("Return");
                 return;
             }
 
-            OperationOptionsBuilder ooptionsBuilder = this.createOperationOptionsBuilder(UpdateApiOp.class);
-            ooptionsBuilder.setAttributesToGet(attributesToGet);
-            ConnectorObject connectorObject = this.connectorFacade.getObject(objectClass, uid, ooptionsBuilder.build());
+            OperationOptionsBuilder oOptionsBuilder = this.createOperationOptionsBuilder(UpdateApiOp.class);
+            oOptionsBuilder.setAttributesToGet(attributesToGet);
+            ConnectorObject connectorObject = this.connectorFacade.getObject(objectClass, uid, oOptionsBuilder.build());
             Assertions.nullCheck(connectorObject, "connectorObject");
             if (!parentWriteBackFieldMappings.isEmpty()) {
                 this.writeBackParentForm(parentWriteBackFieldMappings, connectorObject);
@@ -638,8 +638,8 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     }
 
     private String getWriteBackColumnNameByLabel(String fieldLabel) {
-        Set<Form.FieldInfo> childFieldInfos = this.form.getChildFieldInfo();
-        Iterator<Form.FieldInfo> var3 = childFieldInfos.iterator();
+        Set<Form.FieldInfo> childFieldInfoSet = this.form.getChildFieldInfo();
+        Iterator<Form.FieldInfo> var3 = childFieldInfoSet.iterator();
 
         Form.FieldInfo childFieldInfo;
         do {
@@ -670,9 +670,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     private void writeBackTransformedParentForm(Map<String, String> transformedDataMap) {
         Map<String, String> attrs = new HashMap<>();
         Map<String, String> fieldNameMap = new HashMap<>();
-        Set<Form.FieldInfo> fieldInfos = this.form.getFieldInfo();
+        Set<Form.FieldInfo> fieldInfoSet = this.form.getFieldInfo();
 
-        for (Form.FieldInfo fieldInfo : fieldInfos) {
+        for (Form.FieldInfo fieldInfo : fieldInfoSet) {
             fieldNameMap.put(fieldInfo.getLabel(), fieldInfo.getName());
         }
 
