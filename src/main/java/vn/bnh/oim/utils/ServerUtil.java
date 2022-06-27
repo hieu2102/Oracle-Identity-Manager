@@ -37,4 +37,23 @@ public class ServerUtil {
         jarSet.add(jarToUpload);
         platformUtilsService.uploadJars(jarSet);
     }
+
+    public static void deleteJar(String jarName, JarType jarType) throws PlatformServiceException {
+        JarElement jarToDelete = new JarElement();
+        jarToDelete.setType(jarType.getId());
+        jarToDelete.setName(jarName);
+        Set<JarElement> jarSet = new HashSet<>();
+        jarSet.add(jarToDelete);
+        platformUtilsService.deleteJars(jarSet);
+    }
+
+    public static void updateJar(String jarDir, JarType jarType) {
+        JarElement jarToUpload = new JarElement();
+        jarToUpload.setPath(jarDir);
+        jarToUpload.setType(jarType.getId());
+        Set<JarElement> jarSet = new HashSet<>();
+        jarSet.add(jarToUpload);
+        platformUtilsService.updateJars(jarSet);
+
+    }
 }
