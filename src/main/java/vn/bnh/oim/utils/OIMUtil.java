@@ -10,7 +10,6 @@ import oracle.iam.platform.Platform;
 import oracle.iam.platformservice.api.PlatformService;
 import oracle.iam.provisioning.api.ProvisioningService;
 import weblogic.security.auth.login.UsernamePasswordLoginModule;
-
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginException;
