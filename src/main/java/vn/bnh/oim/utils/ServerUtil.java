@@ -2,19 +2,18 @@ package vn.bnh.oim.utils;
 
 import oracle.iam.platformservice.api.PlatformUtilsService;
 import oracle.iam.platformservice.exception.PlatformServiceException;
-import oracle.iam.platformservice.utils.JarUploadUtility;
 import oracle.iam.platformservice.vo.JarElement;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class ServerUtil {
-    JarUploadUtility jarUploadService = null;
-    PlatformUtilsService platformUtilsService = null;
+    PlatformUtilsService platformUtilsService = OIMUtil.platformUtilsService;
 
     public static enum JarType {
         JavaTasks("JavaTasks"), ScheduleTask("ScheduleTask"), ThirdParty("ThirdParty"), ICFBundle("ICFBundle");
         private String id;
+
         JarType(String id) {
             this.id = id;
         }

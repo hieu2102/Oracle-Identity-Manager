@@ -8,8 +8,10 @@ import oracle.iam.identity.usermgmt.api.UserManager;
 import oracle.iam.platform.OIMClient;
 import oracle.iam.platform.Platform;
 import oracle.iam.platformservice.api.PlatformService;
+import oracle.iam.platformservice.api.PlatformUtilsService;
 import oracle.iam.provisioning.api.ProvisioningService;
 import weblogic.security.auth.login.UsernamePasswordLoginModule;
+
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginException;
@@ -31,6 +33,7 @@ public class OIMUtil {
     static OrganizationManager orgService = null;
     static ProvisioningService provisioningService = null;
     static TaskDefinitionOperationsIntf taskDefOps = null;
+    static PlatformUtilsService platformUtilsService = null;
 
     public static void localInitialize(String hostname, String port, String username, String password) throws LoginException {
         String url = String.format("t3://%s:%s", hostname, port);
@@ -60,6 +63,7 @@ public class OIMUtil {
             formInstanceIntf = oimClient.getService(tcFormInstanceOperationsIntf.class);
             provisioningService = oimClient.getService(ProvisioningService.class);
             taskDefOps = oimClient.getService(TaskDefinitionOperationsIntf.class);
+            platformUtilsService = oimClient.getService(PlatformUtilsService.class);
         }
     }
 
@@ -78,6 +82,7 @@ public class OIMUtil {
             formInstanceIntf = Platform.getService(tcFormInstanceOperationsIntf.class);
             provisioningService = Platform.getService(ProvisioningService.class);
             taskDefOps = Platform.getService(TaskDefinitionOperationsIntf.class);
+            platformUtilsService = Platform.getService(PlatformUtilsService.class);
         }
     }
 }
