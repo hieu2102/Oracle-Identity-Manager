@@ -8,11 +8,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ServerUtil {
-    PlatformUtilsService platformUtilsService = OIMUtil.platformUtilsService;
+    static PlatformUtilsService platformUtilsService = OIMUtil.platformUtilsService;
 
-    public static enum JarType {
+    public enum JarType {
         JavaTasks("JavaTasks"), ScheduleTask("ScheduleTask"), ThirdParty("ThirdParty"), ICFBundle("ICFBundle");
-        private String id;
+        private final String id;
 
         JarType(String id) {
             this.id = id;
@@ -23,7 +23,7 @@ public class ServerUtil {
         }
     }
 
-    public void uploadJar(String jarDir, JarType jarType) throws PlatformServiceException {
+    public static void uploadJar(String jarDir, JarType jarType) throws PlatformServiceException {
         JarElement jarToUpload = new JarElement();
         jarToUpload.setPath(jarDir);
         jarToUpload.setType(jarType.getId());

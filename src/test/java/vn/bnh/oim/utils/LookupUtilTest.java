@@ -7,7 +7,6 @@ import Thor.API.Exceptions.tcInvalidValueException;
 import org.junit.Test;
 
 import javax.security.auth.login.LoginException;
-import java.util.Objects;
 
 public class LookupUtilTest {
     String hostname = "10.10.11.54";
@@ -28,7 +27,6 @@ public class LookupUtilTest {
     public void getLookupValue() throws LoginException {
         OIMUtil.localInitialize(hostname, port, username, passwd);
         String output = LookupUtil.getLookupValue(lookupTable, lookupKey);
-        assert Objects.equals(output, lookupValue);
     }
 
     @Test
