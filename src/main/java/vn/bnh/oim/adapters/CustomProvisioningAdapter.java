@@ -1,6 +1,7 @@
 package vn.bnh.oim.adapters;
 
 import com.thortech.xl.dataaccess.tcDataProvider;
+import com.thortech.xl.ejb.beansimpl.tcFormInstanceOperationsBean;
 import oracle.iam.connectors.icfcommon.Action.Timing;
 import oracle.iam.connectors.icfcommon.*;
 import oracle.iam.connectors.icfcommon.ChildFormQuery.Type;

@@ -89,5 +89,12 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/connector-framework.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>com.oracle</groupId>
+            <artifactId>xlDataObjectBeans</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/xlDataObjectBeans.jar</systemPath>
+        </dependency>
     </dependencies>
 </project>
