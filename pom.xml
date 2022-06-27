@@ -82,5 +82,12 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/icf-oim-intg.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>com.oracle</groupId>
+            <artifactId>oim-connector-framework</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/connector-framework.jar</systemPath>
+        </dependency>
     </dependencies>
 </project>
