@@ -17,7 +17,7 @@ import java.util.*;
 
 @SuppressWarnings("rawtypes")
 public class UpdateAccountsRoles extends TaskSupport {
-    private final ODLLogger logger = ODLLogger.getODLLogger(UpdateAccountsRoles.class.getName());
+    private static final ODLLogger logger = ODLLogger.getODLLogger(UpdateAccountsRoles.class.getName());
     private HashMap scheduledTaskInputParams;
     private String APP_INST_NAME;
     private String PARENT_PROCESS_FORM_ROLE_FIELD;

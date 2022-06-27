@@ -1,6 +1,7 @@
 package vn.bnh.oim.utils;
 
 import Thor.API.Operations.*;
+import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.identity.orgmgmt.api.OrganizationManager;
 import oracle.iam.identity.rolemgmt.api.RoleManager;
@@ -35,11 +36,19 @@ public class OIMUtil {
     static TaskDefinitionOperationsIntf taskDefOps = null;
     static PlatformUtilsService platformUtilsService = null;
     static tcLookupOperationsIntf tcLookupOperationsIntf = null;
+    private static OIMClient oimClient = null;
+
+    public static <T> T getService(Class<T> serviceClass) {
+        if (oimClient != null) {
+            return oimClient.getService(serviceClass);
+        } else {
+            return Platform.getService(serviceClass);
+        }
+    }
 
     public static void localInitialize(String hostname, String port, String username, String password) throws LoginException {
         String url = String.format("t3://%s:%s", hostname, port);
         if (null == formInstanceOperationsIntf) {
-            logger.info("Initialize OIM Services ");
             Configuration.setConfiguration(new Configuration() {
                 @Override
                 public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
@@ -50,42 +59,30 @@ public class OIMUtil {
             Hashtable<String, String> env = new Hashtable<>();
             env.put(OIMClient.JAVA_NAMING_FACTORY_INITIAL, "weblogic.jndi.WLInitialContextFactory");
             env.put(OIMClient.JAVA_NAMING_PROVIDER_URL, url);
-            OIMClient oimClient = new OIMClient(env);
+            oimClient = new OIMClient(env);
             oimClient.login(username, password.toCharArray(), env);
-            formInstanceOperationsIntf = oimClient.getService(tcFormInstanceOperationsIntf.class);
-            userOperationsintf = oimClient.getService(tcUserOperationsIntf.class);
-            provisioningOperationsIntf = oimClient.getService(tcProvisioningOperationsIntf.class);
-            formDefOperationIntf = oimClient.getService(tcFormDefinitionOperationsIntf.class);
-            itResDefOperationIntf = oimClient.getService(tcITResourceInstanceOperationsIntf.class);
-            userService = oimClient.getService(UserManager.class);
-            platformService = oimClient.getService(PlatformService.class);
-            roleService = oimClient.getService(RoleManager.class);
-            orgService = oimClient.getService(OrganizationManager.class);
-            formInstanceIntf = oimClient.getService(tcFormInstanceOperationsIntf.class);
-            provisioningService = oimClient.getService(ProvisioningService.class);
-            taskDefOps = oimClient.getService(TaskDefinitionOperationsIntf.class);
-            platformUtilsService = oimClient.getService(PlatformUtilsService.class);
-            tcLookupOperationsIntf = oimClient.getService(tcLookupOperationsIntf.class);
+            initialize();
         }
     }
 
     public static void initialize() {
         if (null == formDefOperationIntf) {
-            logger.info("Initialize OIM Services");
-            formInstanceOperationsIntf = Platform.getService(tcFormInstanceOperationsIntf.class);
-            userOperationsintf = Platform.getService(tcUserOperationsIntf.class);
-            provisioningOperationsIntf = Platform.getService(tcProvisioningOperationsIntf.class);
-            formDefOperationIntf = Platform.getService(tcFormDefinitionOperationsIntf.class);
-            itResDefOperationIntf = Platform.getService(tcITResourceInstanceOperationsIntf.class);
-            userService = Platform.getService(UserManager.class);
-            platformService = Platform.getService(PlatformService.class);
-            roleService = Platform.getService(RoleManager.class);
-            orgService = Platform.getService(OrganizationManager.class);
-            formInstanceIntf = Platform.getService(tcFormInstanceOperationsIntf.class);
-            provisioningService = Platform.getService(ProvisioningService.class);
-            taskDefOps = Platform.getService(TaskDefinitionOperationsIntf.class);
-            platformUtilsService = Platform.getService(PlatformUtilsService.class);
-            tcLookupOperationsIntf = Platform.getService(tcLookupOperationsIntf.class);
+            logger.log(ODLLevel.INFO, "Initialize OIM Services, Initializer: {0}", null == oimClient ? Platform.class : OIMClient.class);
+            formInstanceOperationsIntf = getService(tcFormInstanceOperationsIntf.class);
+            userOperationsintf = getService(tcUserOperationsIntf.class);
+            provisioningOperationsIntf = getService(tcProvisioningOperationsIntf.class);
+            formDefOperationIntf = getService(tcFormDefinitionOperationsIntf.class);
+            itResDefOperationIntf = getService(tcITResourceInstanceOperationsIntf.class);
+            userService = getService(UserManager.class);
+            platformService = getService(PlatformService.class);
+            roleService = getService(RoleManager.class);
+            orgService = getService(OrganizationManager.class);
+            formInstanceIntf = getService(tcFormInstanceOperationsIntf.class);
+            provisioningService = getService(ProvisioningService.class);
+            taskDefOps = getService(TaskDefinitionOperationsIntf.class);
+            platformUtilsService = getService(PlatformUtilsService.class);
+            tcLookupOperationsIntf = getService(tcLookupOperationsIntf.class);
         }
     }
+
 }
