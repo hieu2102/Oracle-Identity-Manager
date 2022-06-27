@@ -34,6 +34,7 @@ public class OIMUtil {
     static ProvisioningService provisioningService = null;
     static TaskDefinitionOperationsIntf taskDefOps = null;
     static PlatformUtilsService platformUtilsService = null;
+    static tcLookupOperationsIntf tcLookupOperationsIntf = null;
 
     public static void localInitialize(String hostname, String port, String username, String password) throws LoginException {
         String url = String.format("t3://%s:%s", hostname, port);
@@ -64,6 +65,7 @@ public class OIMUtil {
             provisioningService = oimClient.getService(ProvisioningService.class);
             taskDefOps = oimClient.getService(TaskDefinitionOperationsIntf.class);
             platformUtilsService = oimClient.getService(PlatformUtilsService.class);
+            tcLookupOperationsIntf = oimClient.getService(tcLookupOperationsIntf.class);
         }
     }
 
@@ -83,6 +85,7 @@ public class OIMUtil {
             provisioningService = Platform.getService(ProvisioningService.class);
             taskDefOps = Platform.getService(TaskDefinitionOperationsIntf.class);
             platformUtilsService = Platform.getService(PlatformUtilsService.class);
+            tcLookupOperationsIntf = Platform.getService(tcLookupOperationsIntf.class);
         }
     }
 }

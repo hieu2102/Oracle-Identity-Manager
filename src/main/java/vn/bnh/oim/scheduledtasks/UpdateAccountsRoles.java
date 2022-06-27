@@ -18,7 +18,7 @@ import java.util.*;
 @SuppressWarnings("rawtypes")
 public class UpdateAccountsRoles extends TaskSupport {
     private final ODLLogger logger = ODLLogger.getODLLogger(UpdateAccountsRoles.class.getName());
-    private HashMap ScheduledTaskInputParams;
+    private HashMap scheduledTaskInputParams;
     private String APP_INST_NAME;
     private String PARENT_PROCESS_FORM_ROLE_FIELD;
     private String PARENT_PROCESS_FORM_ROLE_FIELD_FORMAT;
@@ -26,7 +26,7 @@ public class UpdateAccountsRoles extends TaskSupport {
 
     @Override
     public void execute(HashMap hashMap) throws Exception {
-        this.ScheduledTaskInputParams = hashMap;
+        this.scheduledTaskInputParams = hashMap;
         logger.log(ODLLevel.INFO, "Get all accounts in PROVISIONING states for Application Instance {0}", APP_INST_NAME);
         Set<Account> accountList = ApplicationInstanceUtil.getProvisioningAccount(APP_INST_NAME);
         accountList.forEach(account -> {
@@ -65,10 +65,10 @@ public class UpdateAccountsRoles extends TaskSupport {
 
     @Override
     public void setAttributes() {
-        this.APP_INST_NAME = this.ScheduledTaskInputParams.get("Application Instance Name").toString();
-        this.PARENT_PROCESS_FORM_ROLE_FIELD = this.ScheduledTaskInputParams.get("Parent Process Form's Role Field Name").toString();
-        this.PARENT_PROCESS_FORM_ROLE_FIELD_FORMAT = this.ScheduledTaskInputParams.get("Role Field's Format").toString();
-        this.CHILD_PROCESS_FORM_NAME = this.ScheduledTaskInputParams.get("Child Process Form's Name").toString();
+        this.APP_INST_NAME = this.scheduledTaskInputParams.get("Application Instance Name").toString();
+        this.PARENT_PROCESS_FORM_ROLE_FIELD = this.scheduledTaskInputParams.get("Parent Process Form's Role Field Name").toString();
+        this.PARENT_PROCESS_FORM_ROLE_FIELD_FORMAT = this.scheduledTaskInputParams.get("Role Field's Format").toString();
+        this.CHILD_PROCESS_FORM_NAME = this.scheduledTaskInputParams.get("Child Process Form's Name").toString();
 //        initialize OIMUTil
         OIMUtil.initialize();
     }
