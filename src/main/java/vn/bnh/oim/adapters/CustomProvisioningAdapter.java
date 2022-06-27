@@ -27,6 +27,7 @@ import org.identityconnectors.framework.common.objects.*;
 import java.sql.Timestamp;
 import java.util.*;
 
+@SuppressWarnings({"rawtypes", "unused"})
 public final class CustomProvisioningAdapter implements ProvisioningManager {
     private static final Log LOG = Log.getLog(oracle.iam.connectors.icfcommon.prov.ICProvisioningManager.class);
     private static final String PROVISIONING_LOOKUP_PROPERTY_NAME = "Provisioning Attribute Map";
@@ -524,7 +525,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     private String doEnable(String objectType, Boolean enabled) {
         LOG.ok("Enter [{0}]", enabled);
-        String status = null;
+        String status;
 
         try {
             this.init(objectType);
@@ -591,50 +592,45 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             Set<FieldMapping> parentWriteBackFieldMappings = new HashSet<>();
             Set<FieldMapping> childWriteBackFieldMappings = new HashSet<>();
             new HashMap();
-            Iterator<FieldMapping> var8 = writeBackFieldMappings.iterator();
 
-            while (true) {
-                while (var8.hasNext()) {
-                    FieldMapping fieldMapping = var8.next();
-                    if (!fieldMapping.isChildForm()) {
-                        LOG.ok(" adding parent fieldmap[{0}]", fieldMapping);
-                        parentWriteBackFieldMappings.add(fieldMapping);
-                    } else if (fieldMapping.isChildForm() && fieldMapping.isEmbeddedObject() && this.formQuery.getType().equals(Type.ADD)) {
-                        List<Map<String, String>> addedChildRows = this.form.getChildFormFieldValuesByColumn(fieldMapping.getChildForm());
-                        if (!addedChildRows.isEmpty()) {
-                            Map<String, String> addedChildRow = addedChildRows.get(0);
-                            String writeBackColName = this.getWriteBackColumnNameByLabel(fieldMapping.getFieldLabel());
-                            String writeBackColValue = addedChildRow.get(writeBackColName);
-                            if (StringUtil.isNotBlank(writeBackColValue) && !writeBackColValue.equals("0")) {
-                                LOG.warn("Writeback child column: {0} has a non-zero value: {1}. Assuming that writeback has already happened for this row, ignoring writeback now", writeBackColName, writeBackColValue);
-                            } else {
-                                childWriteBackFieldMappings.add(fieldMapping);
-                            }
+            for (FieldMapping fieldMapping : writeBackFieldMappings) {
+                if (!fieldMapping.isChildForm()) {
+                    LOG.ok(" adding parent fieldmap[{0}]", fieldMapping);
+                    parentWriteBackFieldMappings.add(fieldMapping);
+                } else if (fieldMapping.isEmbeddedObject() && this.formQuery.getType().equals(Type.ADD)) {
+                    List<Map<String, String>> addedChildRows = this.form.getChildFormFieldValuesByColumn(fieldMapping.getChildForm());
+                    if (!addedChildRows.isEmpty()) {
+                        Map<String, String> addedChildRow = addedChildRows.get(0);
+                        String writeBackColName = this.getWriteBackColumnNameByLabel(fieldMapping.getFieldLabel());
+                        String writeBackColValue = addedChildRow.get(writeBackColName);
+                        if (StringUtil.isNotBlank(writeBackColValue) && !writeBackColValue.equals("0")) {
+                            LOG.warn("Writeback child column: {0} has a non-zero value: {1}. Assuming that writeback has already happened for this row, ignoring writeback now", writeBackColName, writeBackColValue);
+                        } else {
+                            childWriteBackFieldMappings.add(fieldMapping);
                         }
                     }
                 }
+            }
 
-                Set<String> attributesToGet = getAttributesToGet(parentWriteBackFieldMappings);
-                LOG.ok(" Parent write back filed mappings are [{0}]", parentWriteBackFieldMappings);
-                attributesToGet.addAll(getAttributesToGet(childWriteBackFieldMappings));
-                if (attributesToGet.isEmpty()) {
-                    LOG.warn("No writeback attributes to be fetched from the connector. Exiting writeback");
-                    LOG.ok("Return");
-                    return;
-                }
+            Set<String> attributesToGet = getAttributesToGet(parentWriteBackFieldMappings);
+            LOG.ok(" Parent write back filed mappings are [{0}]", parentWriteBackFieldMappings);
+            attributesToGet.addAll(getAttributesToGet(childWriteBackFieldMappings));
+            if (attributesToGet.isEmpty()) {
+                LOG.warn("No writeback attributes to be fetched from the connector. Exiting writeback");
+                LOG.ok("Return");
+                return;
+            }
 
-                OperationOptionsBuilder ooptionsBuilder = this.createOperationOptionsBuilder(UpdateApiOp.class);
-                ooptionsBuilder.setAttributesToGet(attributesToGet);
-                ConnectorObject connectorObject = this.connectorFacade.getObject(objectClass, uid, ooptionsBuilder.build());
-                Assertions.nullCheck(connectorObject, "connectorObject");
-                if (!parentWriteBackFieldMappings.isEmpty()) {
-                    this.writeBackParentForm(parentWriteBackFieldMappings, connectorObject);
-                }
+            OperationOptionsBuilder ooptionsBuilder = this.createOperationOptionsBuilder(UpdateApiOp.class);
+            ooptionsBuilder.setAttributesToGet(attributesToGet);
+            ConnectorObject connectorObject = this.connectorFacade.getObject(objectClass, uid, ooptionsBuilder.build());
+            Assertions.nullCheck(connectorObject, "connectorObject");
+            if (!parentWriteBackFieldMappings.isEmpty()) {
+                this.writeBackParentForm(parentWriteBackFieldMappings, connectorObject);
+            }
 
-                if (!childWriteBackFieldMappings.isEmpty()) {
-                    this.writeBackChildForm(childWriteBackFieldMappings, connectorObject, provEvent);
-                }
-                break;
+            if (!childWriteBackFieldMappings.isEmpty()) {
+                this.writeBackChildForm(childWriteBackFieldMappings, connectorObject, provEvent);
             }
         }
 
@@ -675,19 +671,13 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         Map<String, String> attrs = new HashMap<>();
         Map<String, String> fieldNameMap = new HashMap<>();
         Set<Form.FieldInfo> fieldInfos = this.form.getFieldInfo();
-        Iterator var5 = fieldInfos.iterator();
 
-        while (var5.hasNext()) {
-            Form.FieldInfo fieldInfo = (Form.FieldInfo) var5.next();
+        for (Form.FieldInfo fieldInfo : fieldInfos) {
             fieldNameMap.put(fieldInfo.getLabel(), fieldInfo.getName());
         }
 
-        var5 = transformedDataMap.entrySet().iterator();
-
-        while (var5.hasNext()) {
-            Map.Entry<String, String> entry = (Map.Entry) var5.next();
-            String key = entry.getKey();
-            attrs.put(fieldNameMap.get(entry.getKey()), entry.getValue());
+        for (Map.Entry<String, String> stringStringEntry : transformedDataMap.entrySet()) {
+            attrs.put(fieldNameMap.get(stringStringEntry.getKey()), stringStringEntry.getValue());
         }
 
         if (attrs.size() > 0) {
@@ -706,10 +696,8 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     private void writeBackChildForm(Set<FieldMapping> writeBackFieldMappings, ConnectorObject connectorObject, ProvEvent provEvent) {
         Map<String, Set<FieldMapping>> wbFieldMappingsByChild = this.splitWriteBackFieldMappingsByChildForm(writeBackFieldMappings);
         Map<String, Map<String, List<Object>>> conToOimChildFieldNameMap = this.getConToOimChildFieldNameMap(provEvent.getFieldMappings(), wbFieldMappingsByChild.keySet());
-        Iterator<String> var6 = wbFieldMappingsByChild.keySet().iterator();
 
-        while (var6.hasNext()) {
-            String childFormName = var6.next();
+        for (String childFormName : wbFieldMappingsByChild.keySet()) {
             Map<String, List<Object>> conToOimChildFieldNameMapPerChild = conToOimChildFieldNameMap.get(childFormName);
             String childAttrName = ((FieldMapping) ((Set) wbFieldMappingsByChild.get(childFormName)).iterator().next()).getAttributeName();
             Map<String, String> addedChildRow = this.form.getChildFormFieldValuesByColumn(childFormName).get(0);
@@ -776,10 +764,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
                     if (isMatchingEmbObj) {
                         Map<String, Object> updatedChildTableValues = new HashMap<>();
 
-                        for (Object o : (Set<FieldMapping>) wbFieldMappingsByChild.get(childFormName)) {
-                            FieldMapping fieldMapping = (FieldMapping) o;
-                            childColName = String.valueOf(conToOimChildFieldNameMapPerChild.get(fieldMapping.getEmbeddedAttributeName()).get(0));
-                            Object valueToWriteBack = AttributeUtil.getSingleValue(((EmbeddedObject) embeddedObject).getAttributeByName(fieldMapping.getEmbeddedAttributeName()));
+                        for (FieldMapping o : wbFieldMappingsByChild.get(childFormName)) {
+                            childColName = String.valueOf(conToOimChildFieldNameMapPerChild.get(o.getEmbeddedAttributeName()).get(0));
+                            Object valueToWriteBack = AttributeUtil.getSingleValue(((EmbeddedObject) embeddedObject).getAttributeByName(o.getEmbeddedAttributeName()));
                             updatedChildTableValues.put(childColName, valueToWriteBack);
                         }
 
@@ -845,7 +832,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
                     oimChildFieldInfo.add(childFieldInfo.getName());
                     oimChildFieldInfo.add(fieldMapping.getFieldFlags());
                     if (conToOimChildFieldNameMap.containsKey(fieldMapping.getChildForm())) {
-                        ((Map) conToOimChildFieldNameMap.get(fieldMapping.getChildForm())).put(fieldMapping.getEmbeddedAttributeName(), oimChildFieldInfo);
+                        (conToOimChildFieldNameMap.get(fieldMapping.getChildForm())).put(fieldMapping.getEmbeddedAttributeName(), oimChildFieldInfo);
                     } else {
                         Map<String, List<Object>> conToOimChildFieldNameMapPerChild = new HashMap<>();
                         conToOimChildFieldNameMapPerChild.put(fieldMapping.getEmbeddedAttributeName(), oimChildFieldInfo);
