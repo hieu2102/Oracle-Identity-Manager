@@ -23,6 +23,12 @@ public class ServerUtil {
         }
     }
 
+    /**
+     * Upload Jar to OIM server
+     *
+     * @param jarDir  JAR file directory <u><b>on</b></u> OIM server
+     * @param jarType JAR file type (Scheduled Task, Java Task/Adapter, Third-party libs, Connector Bundle)
+     */
     public static void uploadJar(String jarDir, JarType jarType) throws PlatformServiceException {
         JarElement jarToUpload = new JarElement();
         jarToUpload.setPath(jarDir);
