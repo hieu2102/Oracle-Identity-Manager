@@ -10,6 +10,7 @@ import oracle.iam.platform.OIMClient;
 import oracle.iam.platform.Platform;
 import oracle.iam.platformservice.api.PlatformService;
 import oracle.iam.platformservice.api.PlatformUtilsService;
+import oracle.iam.provisioning.api.ApplicationInstanceService;
 import oracle.iam.provisioning.api.ProvisioningService;
 import weblogic.security.auth.login.UsernamePasswordLoginModule;
 
@@ -36,6 +37,7 @@ public class OIMUtil {
     static TaskDefinitionOperationsIntf taskDefOps = null;
     static PlatformUtilsService platformUtilsService = null;
     static tcLookupOperationsIntf tcLookupOperationsIntf = null;
+    static ApplicationInstanceService applicationInstanceService = null;
     private static OIMClient oimClient = null;
 
     public static <T> T getService(Class<T> serviceClass) {
@@ -82,6 +84,7 @@ public class OIMUtil {
             taskDefOps = getService(TaskDefinitionOperationsIntf.class);
             platformUtilsService = getService(PlatformUtilsService.class);
             tcLookupOperationsIntf = getService(tcLookupOperationsIntf.class);
+            applicationInstanceService = getService(ApplicationInstanceService.class);
         }
     }
 

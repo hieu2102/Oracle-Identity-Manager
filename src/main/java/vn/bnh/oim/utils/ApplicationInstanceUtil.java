@@ -5,31 +5,46 @@ import Thor.API.Exceptions.tcColumnNotFoundException;
 import Thor.API.Exceptions.tcTaskNotFoundException;
 import Thor.API.Operations.tcProvisioningOperationsIntf;
 import Thor.API.tcResultSet;
+import com.thortech.xl.orb.dataaccess.tcDataAccessException;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.identity.exception.NoSuchUserException;
 import oracle.iam.identity.exception.UserLookupException;
 import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.platform.entitymgr.vo.SearchCriteria;
+import oracle.iam.provisioning.api.ApplicationInstanceService;
 import oracle.iam.provisioning.api.ProvisioningConstants;
 import oracle.iam.provisioning.api.ProvisioningService;
-import oracle.iam.provisioning.exception.AccountNotFoundException;
-import oracle.iam.provisioning.exception.GenericProvisioningException;
-import oracle.iam.provisioning.exception.UserNotFoundException;
+import oracle.iam.provisioning.exception.*;
 import oracle.iam.provisioning.vo.Account;
 import oracle.iam.provisioning.vo.AccountData;
+import oracle.iam.provisioning.vo.ApplicationInstance;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ApplicationInstanceUtil {
     private static final ODLLogger logger = ODLLogger.getODLLogger(ApplicationInstanceUtil.class.getName());
-
+    private static final ApplicationInstanceService applicationInstanceService = OIMUtil.applicationInstanceService;
     private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.provisioningOperationsIntf;
     private static final ProvisioningService provisioningService = OIMUtil.provisioningService;
+
+    public static Set<Account> getAccountsForUser(String userLogin, String appInstanceName, ProvisioningConstants.ObjectStatus accountStatus) throws UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException {
+        String userKey = UserUtil.getUser(userLogin).getId();
+        SearchCriteria provisionedCriteria = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_STATUS.getId(), accountStatus.getId(), SearchCriteria.Operator.EQUAL);
+        return provisioningService.getAccountsProvisionedToUser(userKey, provisionedCriteria, new HashMap<>(), true).stream().filter(x -> x.getAppInstance().getApplicationInstanceName().equals(appInstanceName)).collect(Collectors.toSet());
+
+//        return null;
+    }
+
+    public static Account getAccountForUser(String userKey, String appInstName, String accountStatus, long processInstKey) throws UserNotFoundException, GenericProvisioningException {
+        SearchCriteria provisionedCriteria = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_STATUS.getId(), accountStatus, SearchCriteria.Operator.EQUAL);
+        List<Account> accountList = provisioningService.getAccountsProvisionedToUser(userKey, provisionedCriteria, new HashMap<>(), true);
+        if (!accountList.isEmpty()) {
+            return accountList.stream().filter(account -> account.getAppInstance().getApplicationInstanceName().equals(appInstName)).filter(account -> account.getProcessInstanceKey().equals(String.valueOf(processInstKey))).collect(Collectors.toList()).get(0);
+        }
+        return null;
+    }
 
     public static Set<Account> getProvisioningAccountsForUser(User user, String appInstanceName) throws UserNotFoundException, GenericProvisioningException {
         String userKey = user.getId();
@@ -74,5 +89,30 @@ public class ApplicationInstanceUtil {
             results.goToRow(0);
             provisioningOperationsIntf.retryTask(results.getLongValue("Process Instance.Task Details.Key"));
         }
+    }
+
+    public static void provisionAccount(String userLogin, String appInstName, Map<String, Object> parentData) throws UserLookupException, NoSuchUserException, ApplicationInstanceNotFoundException, GenericAppInstanceServiceException, UserNotFoundException, GenericProvisioningException {
+        User user = UserUtil.getUser(userLogin);
+        ApplicationInstance appInst = applicationInstanceService.findApplicationInstanceByName(appInstName);
+        Long resourceFormKey = appInst.getAccountForm().getFormKey();
+        String udTablePrimaryKey = null;
+        AccountData accountData = new AccountData(String.valueOf(resourceFormKey), udTablePrimaryKey, parentData);
+        Account resAccount = new Account(appInst, accountData);
+        provisioningService.provision(user.getId(), resAccount);
+    }
+
+    public static Account getAccountByProcessInstKey(long processInstKey) throws GenericProvisioningException, AccountNotFoundException, tcAPIException, tcDataAccessException, tcColumnNotFoundException, UserNotFoundException {
+        tcResultSet resultSet = provisioningOperationsIntf.getObjectDetail(processInstKey);
+        String userKey;
+        String appInstName;
+        String accountStatus;
+        if (resultSet.getTotalRowCount() > 0) {
+            resultSet.goToRow(0);
+            userKey = resultSet.getStringValue("Users.Key");
+            appInstName = resultSet.getStringValue("Objects.Name");
+            accountStatus = resultSet.getStringValue("Objects.Object Status.Status");
+            return getAccountForUser(userKey, appInstName, accountStatus, processInstKey);
+        }
+        return null;
     }
 }

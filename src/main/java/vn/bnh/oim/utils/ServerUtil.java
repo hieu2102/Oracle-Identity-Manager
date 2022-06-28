@@ -47,9 +47,10 @@ public class ServerUtil {
         platformUtilsService.deleteJars(jarSet);
     }
 
-    public static void updateJar(String jarDir, JarType jarType) {
+    public static void updateJar(String jarDir, String jarName, JarType jarType) {
         JarElement jarToUpload = new JarElement();
         jarToUpload.setPath(jarDir);
+        jarToUpload.setName(jarName);
         jarToUpload.setType(jarType.getId());
         Set<JarElement> jarSet = new HashSet<>();
         jarSet.add(jarToUpload);

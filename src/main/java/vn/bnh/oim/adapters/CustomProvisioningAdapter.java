@@ -2,6 +2,7 @@ package vn.bnh.oim.adapters;
 
 import com.thortech.xl.dataaccess.tcDataProvider;
 import com.thortech.xl.ejb.beansimpl.tcFormInstanceOperationsBean;
+import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.connectors.icfcommon.Action.Timing;
 import oracle.iam.connectors.icfcommon.*;
 import oracle.iam.connectors.icfcommon.ChildFormQuery.Type;
@@ -30,6 +31,7 @@ import java.util.*;
 @SuppressWarnings({"rawtypes", "unused", "ToArrayCallWithZeroLengthArrayArgument"})
 public final class CustomProvisioningAdapter implements ProvisioningManager {
     private static final Log LOG = Log.getLog(oracle.iam.connectors.icfcommon.prov.ICProvisioningManager.class);
+    private static final ODLLogger logger = ODLLogger.getODLLogger(CustomProvisioningAdapter.class.getName());
     private static final String PROVISIONING_LOOKUP_PROPERTY_NAME = "Provisioning Attribute Map";
     private static final String OPTIONS_MAP_LOOKUP_NAME = "Operation Options Map";
     private static final String COMPOUND_VALUE_DELIMITER = "~";
@@ -201,6 +203,13 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     }
 
     public String createObject(String objectType) {
+//        logger.log(ODLLevel.INFO, "Enter method {0}", new Object[]{});
+//        logger.log(ODLLevel.INFO, "Method Parameters: objectType: {0}", objectType);
+//        logger.log(ODLLevel.INFO, "Method Parameters: ITResource Field Name: {0}", this.itResourceFieldName);
+//        logger.log(ODLLevel.INFO, "Method Parameters: processInstanceKey: {0}", this.processInstanceKey);
+        System.out.printf("Method Parameters: objectType: %s%n", objectType);
+        System.out.printf("Method Parameters: ITResource Field Name: %s%n", this.itResourceFieldName);
+        System.out.printf("Method Parameters: processInstanceKey: %s%n", this.processInstanceKey);
         LOG.ok("Enter");
         String responseCode = "SUCCESS";
 
