@@ -259,7 +259,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         attributeBuilder.setName(this.parentRoleFieldLabel);
         ArrayList<EmbeddedObject> attributeValue = new ArrayList<>();
         childTableData.forEach(childData -> {
-            RoleAttributeBuilder.generateRoleComponent(childData, roleFieldFormat);
+            attributeValue.add(RoleAttributeBuilder.generateRoleComponent(childData, roleFieldFormat));
         });
         attributeBuilder.addValue(attributeValue);
         return attributeBuilder.build();
