@@ -1,10 +1,7 @@
 package vn.bnh.oim.adapters;
 
-import Thor.API.Exceptions.tcAPIException;
-import Thor.API.Exceptions.tcColumnNotFoundException;
 import com.thortech.xl.dataaccess.tcDataProvider;
 import com.thortech.xl.ejb.beansimpl.tcFormInstanceOperationsBean;
-import com.thortech.xl.orb.dataaccess.tcDataAccessException;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.connectors.icfcommon.Action.Timing;
 import oracle.iam.connectors.icfcommon.*;
@@ -19,10 +16,6 @@ import oracle.iam.connectors.icfcommon.service.ProvisioningService;
 import oracle.iam.connectors.icfcommon.service.ServiceFactory;
 import oracle.iam.connectors.icfcommon.util.ExceptionUtil;
 import oracle.iam.connectors.icfcommon.util.TypeUtil;
-import oracle.iam.provisioning.exception.AccountNotFoundException;
-import oracle.iam.provisioning.exception.GenericProvisioningException;
-import oracle.iam.provisioning.exception.UserNotFoundException;
-import oracle.iam.provisioning.vo.Account;
 import org.identityconnectors.common.Assertions;
 import org.identityconnectors.common.CollectionUtil;
 import org.identityconnectors.common.StringUtil;
@@ -31,7 +24,6 @@ import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.api.operations.*;
 import org.identityconnectors.framework.common.objects.*;
-import vn.bnh.oim.utils.ApplicationInstanceUtil;
 import vn.bnh.oim.utils.LookupUtil;
 import vn.bnh.oim.utils.OIMUtil;
 
@@ -62,14 +54,15 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     private OperationOptions operationOptions = (new OperationOptionsBuilder()).build();
     private ChildFormQuery formQuery;
     private String roleFormatLookupTable;
+    private String parentRoleFieldLabel;
 
-    public CustomProvisioningAdapter(String itResourceFieldName, String roleFormatLookupTable, long processInstanceKey, tcDataProvider dataProvider) {
+    public CustomProvisioningAdapter(String itResourceFieldName, String roleFormatLookupTable, String parentRoleFieldLabel, long processInstanceKey, tcDataProvider dataProvider) {
         this.itResourceFieldName = itResourceFieldName;
         this.roleFormatLookupTable = roleFormatLookupTable;
+        this.parentRoleFieldLabel = parentRoleFieldLabel;
         this.processInstanceKey = processInstanceKey;
         this.dataProvider = dataProvider;
         OIMUtil.initialize();
-
     }
 
     public CustomProvisioningAdapter(String itResourceFieldName, long processInstanceKey, tcDataProvider dataProvider) {
@@ -132,7 +125,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             LOG.error(var6, "Error while updating user");
             responseCode = ExceptionUtil.getResponse(var6);
         }
-
         LOG.ok("Return [{0}]", responseCode);
         return responseCode;
     }
@@ -166,10 +158,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     }
 
     private void doUpdateChildTable(String objectType, ObjectClass objectClass, ProvEvent provEvent, Set<Attribute> attributes, ChildFormQuery childFormQuery) {
-        System.out.println("===============================================");
-        System.out.println("=====Enter Customized Update Child Table=======");
-        System.out.println("===============================================");
-        System.out.printf("Parameters: objectType:%s\n" + "objectClass: %s\n" + "proEvent: %s\n" + "attributes: %s\n" + "childFormQuery: %s=%s\n", objectType, objectClass, provEvent, attributes, childFormQuery.getType(), childFormQuery.getValue());
         Uid uid = provEvent.getUid();
         String uidFieldLabel = provEvent.getUidFieldLabel();
         Uid retUid;
@@ -205,7 +193,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     private void updateFormData(LinkedHashMap transformedAttrMap) {
         Iterator<Map.Entry<String, String>> var2 = this.form.getFieldValuesByLabel().entrySet().iterator();
-
         Map.Entry<String, String> entry;
         String key;
         do {
@@ -227,54 +214,73 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
+    private Attribute populateRoleField(Map<String, List<Map<String, String>>> childFormData) {
+        String roleFieldFormat = LookupUtil.getLookupValue(this.roleFormatLookupTable, this.itResourceFieldName);
+        AttributeBuilder attributeBuilder = new AttributeBuilder();
+        attributeBuilder.setName(this.parentRoleFieldLabel);
+        ArrayList<EmbeddedObject> attributeValue = new ArrayList<>();
+        childFormData.forEach((childForm, childData) -> {
+            if (roleFieldFormat.contains(childForm)) {
+                EmbeddedObjectBuilder obj = new EmbeddedObjectBuilder();
+                obj.setObjectClass(ObjectClass.GROUP);
+                childData.forEach(childRow -> {
+                    for (Map.Entry<String, String> es : childRow.entrySet()) {
+                        String formattedRowName = String.join("_", childForm, es.getKey().toUpperCase().replaceAll("\\s", "_"));
+                        if (roleFieldFormat.contains(formattedRowName)) {
+                            obj.addAttribute("field", "value");
+                        }
+                    }
+                });
+                attributeValue.add(obj.build());
+            }
+        });
+        attributeBuilder.addValue(attributeValue);
+//        StringBuilder roleFieldValue = new StringBuilder("[");
+//        iterates over child forms
+//        ArrayList<String> roleList = new ArrayList<>();
+//        childFormData.forEach((childForm, childData) -> {
+//            if (roleFieldFormat.contains(childForm)) {
+//                iterates over child form data
+//                childData.forEach(childRow -> {
+//                    String roleFieldSubComponent = roleFieldFormat;
+//                            roleFieldSubComponent = roleFieldSubComponent.replace(formattedRowName, es.getValue());
+//                        }
+//                    }
+//                    roleList.add(roleFieldSubComponent);
+//                });
+//            }
+//        });
+//        roleFieldValue.append(String.join(",", roleList)).append("]");
+//        System.out.printf("role field value:%s%n", roleFieldValue);
+        return attributeBuilder.build();
+    }
+
     public String createObject(String objectType) {
         OIMUtil.initialize();
-        System.out.println("===============================================");
-        System.out.println("========Enter Customized Create Object=========");
-        System.out.println("===============================================");
-        System.out.printf("Method Parameters: objectType: %s%n", objectType);
-        System.out.printf("Method Parameters: ITResource Field Name: %s%n", this.itResourceFieldName);
-        System.out.printf("Method Parameters: processInstanceKey: %s%n", this.processInstanceKey);
         LOG.ok("Enter");
         String responseCode = "SUCCESS";
         try {
-            Account accountToProvision = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
+            this.init(objectType);
             AtomicBoolean hasChildData = new AtomicBoolean(false);
-            accountToProvision.getAccountData().getChildData().forEach((key, value) -> {
-                if (value.size() > 0) {
+            this.form.getChildFormFieldValues().forEach((k, v) -> {
+                if (v.size() > 0) {
                     hasChildData.set(true);
                 }
             });
             if (!hasChildData.get()) {
-                System.out.println("Child Data is not set");
                 return "ERROR";
             }
-//            populate parent role's field
-            String roleFieldFormat = LookupUtil.getLookupValue(this.roleFormatLookupTable, this.itResourceFieldName);
-            System.out.printf("role field format: %s", roleFieldFormat);
-            if (roleFieldFormat == null || roleFieldFormat.isEmpty()) {
-                return "ERROR";
-            }
-            StringBuilder roleFieldValue = new StringBuilder("[");
-            ArrayList<String> roleList = new ArrayList<>();
-            accountToProvision.getAccountData().getChildData().forEach((key, value) -> value.forEach(ctr -> {
-                String roleFieldSubComponent = roleFieldFormat;
-                for (Map.Entry<String, Object> es : ctr.getChildData().entrySet()) {
-                    if (roleFieldFormat.contains(es.getKey())) {
-                        roleFieldSubComponent = roleFieldSubComponent.replace(es.getKey(), String.valueOf(es.getValue()));
-                    }
-                }
-                roleList.add(roleFieldSubComponent);
-            }));
-            roleFieldValue.append(String.join(",", roleList)).append("]");
-            System.out.printf("role field value:%s%n", roleFieldValue);
-            this.init(objectType);
+//            String roleFieldValue = populateRoleField(this.form.getChildFormFieldValues());
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
             validator.validate(this.form);
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
+//            this.form.setFieldValueByLabel(this.parentRoleFieldLabel, roleFieldValue);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
             Set<Attribute> attributes = provEvent.buildAttributes();
+            attributes.add(populateRoleField(this.form.getChildFormFieldValues()));
+            System.out.println("Attributes List:");
+            attributes.forEach(System.out::println);
             OperationOptions operationOptions = this.createOperationOptionsBuilder(CreateApiOp.class).build();
             OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_CREATE), attributes, scriptOptions);
@@ -282,12 +288,10 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             this.provisioningService.setFormField(this.processInstanceKey, provEvent.getUidFieldLabel(), uid.getUidValue());
             this.writeBack(objectClass, uid, provEvent);
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_CREATE), attributes, scriptOptions);
-        } catch (RuntimeException | GenericProvisioningException | AccountNotFoundException | tcAPIException |
-                 tcDataAccessException | tcColumnNotFoundException | UserNotFoundException var10) {
-            LOG.error(var10, "Error while creating user");
-            responseCode = ExceptionUtil.getResponse(var10);
+        } catch (RuntimeException rte) {
+            rte.printStackTrace();
+            responseCode = ExceptionUtil.getResponse(rte);
         }
-
         LOG.ok("Return [{0}]", responseCode);
         return responseCode;
     }
