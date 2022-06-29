@@ -24,12 +24,11 @@ import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.api.operations.*;
 import org.identityconnectors.framework.common.objects.*;
-import vn.bnh.oim.utils.LookupUtil;
 import vn.bnh.oim.utils.OIMUtil;
 
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"rawtypes", "unused", "ToArrayCallWithZeroLengthArrayArgument"})
 public final class CustomProvisioningAdapter implements ProvisioningManager {
@@ -198,26 +197,28 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ChildFormQuery childFormQuery
     ) {
         Uid uid = provEvent.getUid();
-        String uidFieldLabel = provEvent.getUidFieldLabel();
-        Uid retUid;
-        OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
-        this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_UPDATE), attributes, scriptOptions);
-        OperationOptions operationOptions = this.createOperationOptionsBuilder(UpdateApiOp.class).build();
-        ChildFormQuery.Type type = childFormQuery.getType();
-//        switch (type) {
-//            case ADD:
-//                retUid = this.connectorFacade.addAttributeValues(objectClass, uid, attributes, operationOptions);
-//                break;
-//            case DELETE:
-//                retUid = this.connectorFacade.removeAttributeValues(objectClass, uid, attributes, operationOptions);
-//                break;
-//            default:
-//                retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
-//        }
-//
-//        this.provisioningService.setFormField(this.processInstanceKey, uidFieldLabel, retUid.getUidValue());
-//        this.writeBack(objectClass, retUid, provEvent);
-        this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_UPDATE), attributes, scriptOptions);
+//        ensures method will not fail if account is in PROVISIONING state
+        if (null != uid) {
+            String uidFieldLabel = provEvent.getUidFieldLabel();
+            Uid retUid;
+            OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
+            this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_UPDATE), attributes, scriptOptions);
+            OperationOptions operationOptions = this.createOperationOptionsBuilder(UpdateApiOp.class).build();
+            ChildFormQuery.Type type = childFormQuery.getType();
+            switch (type) {
+                case ADD:
+                    retUid = this.connectorFacade.addAttributeValues(objectClass, uid, attributes, operationOptions);
+                    break;
+                case DELETE:
+                    retUid = this.connectorFacade.removeAttributeValues(objectClass, uid, attributes, operationOptions);
+                    break;
+                default:
+                    retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
+            }
+            this.provisioningService.setFormField(this.processInstanceKey, uidFieldLabel, retUid.getUidValue());
+            this.writeBack(objectClass, retUid, provEvent);
+            this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_UPDATE), attributes, scriptOptions);
+        }
     }
 
     public void setEffectiveITResourceName(String itResourceName) {
@@ -253,13 +254,20 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    private Attribute populateRoleField(List<Map<String, String>> childTableData) {
-        String roleFieldFormat = LookupUtil.getLookupValue(this.roleFormatLookupTable, this.itResourceFieldName);
+    private Attribute populateRoleField(
+            List<FieldMapping> childFieldMappings,
+            List<Map<String, String>> childTableData
+    ) {
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setName(this.parentRoleFieldLabel);
         ArrayList<EmbeddedObject> attributeValue = new ArrayList<>();
         childTableData.forEach(childData -> {
-            attributeValue.add(RoleAttributeBuilder.generateRoleComponent(childData, roleFieldFormat));
+            EmbeddedObjectBuilder eoBuilder = new EmbeddedObjectBuilder();
+            eoBuilder.setObjectClass(ObjectClass.GROUP);
+            childFieldMappings.forEach(fieldMapping -> {
+                eoBuilder.addAttribute(fieldMapping.getAttributeName(), childData.get(fieldMapping.getFieldLabel()));
+            });
+            attributeValue.add(eoBuilder.build());
         });
         attributeBuilder.addValue(attributeValue);
         return attributeBuilder.build();
@@ -280,8 +288,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
+            List<FieldMapping> childFieldMappings = provEvent.getFieldMappings().stream().filter(fm -> childTableName.equals(fm.getChildForm())).collect(Collectors.toList());
             Set<Attribute> attributes = provEvent.buildAttributes();
-            attributes.add(populateRoleField(childTableData));
+            attributes.add(populateRoleField(childFieldMappings, childTableData));
             OperationOptions operationOptions = this.createOperationOptionsBuilder(CreateApiOp.class).build();
             OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_CREATE), attributes, scriptOptions);
@@ -339,12 +348,14 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
-            Set<Attribute> attributes = provEvent.buildSingleAttributes(attrFieldName);
+//            Set<Attribute> attributes = provEvent.buildSingleAttributes(attrFieldName);
+            Set<Attribute> attributes = provEvent.buildAttributes();
+            List<Map<String, String>> childTableData = this.form.getChildFormFieldValues().get(childTableName);
+//            attributes.add(populateRoleField(childFieldMappings, childTableData));
             String status = this.doUpdate(objectType, objectClass, provEvent, attributes);
             if (status != null && status.equals("SUCCESS") && transformedData != null && transformedData.size() > 0) {
                 this.writeBackTransformedParentForm(transformedData);
             }
-
             return status;
         } catch (RuntimeException var9) {
             LOG.error(var9, "Error in updateAttributeValue");
@@ -709,7 +720,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             Set<FieldMapping> parentWriteBackFieldMappings = new HashSet<>();
             Set<FieldMapping> childWriteBackFieldMappings = new HashSet<>();
             new HashMap();
-
             for (FieldMapping fieldMapping : writeBackFieldMappings) {
                 if (!fieldMapping.isChildForm()) {
                     LOG.ok("adding parent field map [{0}]", fieldMapping);
