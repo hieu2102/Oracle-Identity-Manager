@@ -41,8 +41,6 @@ public class ImportTest {
     @Test
     public void getAccounts() throws LoginException, UserNotFoundException, UserLookupException, GenericProvisioningException, NoSuchUserException {
         OIMUtil.localInitialize(hostname, port, username, passwd);
-//        Long procInstKey = Long.valueOf(163);
-//        ApplicationInstanceUtil.getAccountByProcessInstKey(procInstKey);
         String userLogin = "MINHDUCTEST01";
         String appInstName = "FlexCash";
         Set<Account> accounts = ApplicationInstanceUtil.getAccountsForUser(userLogin, appInstName, ProvisioningConstants.ObjectStatus.PROVISIONED);
@@ -51,15 +49,12 @@ public class ImportTest {
             System.out.println(x.getAccountID());
             System.out.println(x.getAccountData().getData());
         });
-//        Map<String, Object> parentData = new HashMap<>();
-//        ApplicationInstanceUtil.provisionAccount(userLogin, appInstName, parentData);
     }
 
     @Test
     public void getAccountByProcInstKey() throws Exception {
         OIMUtil.localInitialize(hostname, port, username, passwd);
         long procInstKey = 163;
-//        String procInstKey = String.valueOf(procInstKeyLong);
         System.out.println(ApplicationInstanceUtil.getAccountByProcessInstKey(procInstKey).getAccountData().getData());
     }
 }

@@ -1,7 +1,10 @@
 package vn.bnh.oim.adapters;
 
+import Thor.API.Exceptions.tcAPIException;
+import Thor.API.Exceptions.tcColumnNotFoundException;
 import com.thortech.xl.dataaccess.tcDataProvider;
 import com.thortech.xl.ejb.beansimpl.tcFormInstanceOperationsBean;
+import com.thortech.xl.orb.dataaccess.tcDataAccessException;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.connectors.icfcommon.Action.Timing;
 import oracle.iam.connectors.icfcommon.*;
@@ -16,6 +19,10 @@ import oracle.iam.connectors.icfcommon.service.ProvisioningService;
 import oracle.iam.connectors.icfcommon.service.ServiceFactory;
 import oracle.iam.connectors.icfcommon.util.ExceptionUtil;
 import oracle.iam.connectors.icfcommon.util.TypeUtil;
+import oracle.iam.provisioning.exception.AccountNotFoundException;
+import oracle.iam.provisioning.exception.GenericProvisioningException;
+import oracle.iam.provisioning.exception.UserNotFoundException;
+import oracle.iam.provisioning.vo.Account;
 import org.identityconnectors.common.Assertions;
 import org.identityconnectors.common.CollectionUtil;
 import org.identityconnectors.common.StringUtil;
@@ -24,9 +31,12 @@ import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.api.operations.*;
 import org.identityconnectors.framework.common.objects.*;
+import vn.bnh.oim.utils.ApplicationInstanceUtil;
+import vn.bnh.oim.utils.OIMUtil;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings({"rawtypes", "unused", "ToArrayCallWithZeroLengthArrayArgument"})
 public final class CustomProvisioningAdapter implements ProvisioningManager {
@@ -55,6 +65,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         this.itResourceFieldName = itResourceFieldName;
         this.processInstanceKey = processInstanceKey;
         this.dataProvider = dataProvider;
+        OIMUtil.initialize();
     }
 
     private void init(String objectType, ChildFormQuery formQuery) {
@@ -87,7 +98,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     public String addChildTableValue(String objectType, String childTableName, long childPrimaryKey) {
         LOG.ok("Enter [{0}, {1}, {2}]", objectType, childTableName, childPrimaryKey);
         String responseCode = "SUCCESS";
-
         try {
             ChildFormQuery childFormQuery = new ChildFormQuery(Type.ADD, childPrimaryKey);
             this.doUpdateChildTableValue(objectType, childTableName, childFormQuery);
@@ -145,26 +155,31 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     }
 
     private void doUpdateChildTable(String objectType, ObjectClass objectClass, ProvEvent provEvent, Set<Attribute> attributes, ChildFormQuery childFormQuery) {
+        System.out.println("===============================================");
+        System.out.println("=====Enter Customized Update Child Table=======");
+        System.out.println("===============================================");
+        System.out.printf("Parameters: objectType:%s\n" + "objectClass: %s\n" + "proEvent: %s\n" + "attributes: %s\n" + "childFormQuery: %s=%s\n", objectType, objectClass, provEvent, attributes, childFormQuery.getType(), childFormQuery.getValue());
         Uid uid = provEvent.getUid();
+        System.out.printf("UID: %s%n", uid);
         String uidFieldLabel = provEvent.getUidFieldLabel();
         Uid retUid;
         OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
         this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_UPDATE), attributes, scriptOptions);
         OperationOptions operationOptions = this.createOperationOptionsBuilder(UpdateApiOp.class).build();
         ChildFormQuery.Type type = childFormQuery.getType();
-        switch (type) {
-            case ADD:
-                retUid = this.connectorFacade.addAttributeValues(objectClass, uid, attributes, operationOptions);
-                break;
-            case DELETE:
-                retUid = this.connectorFacade.removeAttributeValues(objectClass, uid, attributes, operationOptions);
-                break;
-            default:
-                retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
-        }
-
-        this.provisioningService.setFormField(this.processInstanceKey, uidFieldLabel, retUid.getUidValue());
-        this.writeBack(objectClass, retUid, provEvent);
+//        switch (type) {
+//            case ADD:
+//                retUid = this.connectorFacade.addAttributeValues(objectClass, uid, attributes, operationOptions);
+//                break;
+//            case DELETE:
+//                retUid = this.connectorFacade.removeAttributeValues(objectClass, uid, attributes, operationOptions);
+//                break;
+//            default:
+//                retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
+//        }
+//
+//        this.provisioningService.setFormField(this.processInstanceKey, uidFieldLabel, retUid.getUidValue());
+//        this.writeBack(objectClass, retUid, provEvent);
         this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_UPDATE), attributes, scriptOptions);
     }
 
@@ -203,24 +218,40 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     }
 
     public String createObject(String objectType) {
-//        logger.log(ODLLevel.INFO, "Enter method {0}", new Object[]{});
-//        logger.log(ODLLevel.INFO, "Method Parameters: objectType: {0}", objectType);
-//        logger.log(ODLLevel.INFO, "Method Parameters: ITResource Field Name: {0}", this.itResourceFieldName);
-//        logger.log(ODLLevel.INFO, "Method Parameters: processInstanceKey: {0}", this.processInstanceKey);
+        OIMUtil.initialize();
+        System.out.println("===============================================");
+        System.out.println("========Enter Customized Create Object=========");
+        System.out.println("===============================================");
         System.out.printf("Method Parameters: objectType: %s%n", objectType);
         System.out.printf("Method Parameters: ITResource Field Name: %s%n", this.itResourceFieldName);
         System.out.printf("Method Parameters: processInstanceKey: %s%n", this.processInstanceKey);
         LOG.ok("Enter");
         String responseCode = "SUCCESS";
-
         try {
+            Account accountToProvision = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
+            System.out.printf("Account data: %s%n", accountToProvision.getAccountData().getData());
+            System.out.printf("Child Data: %s%n%n", accountToProvision.getAccountData().getChildData());
+            AtomicBoolean hasChildData = new AtomicBoolean(false);
+            accountToProvision.getAccountData().getChildData().entrySet().forEach(es -> {
+                if (es.getValue().size() > 0) {
+                    hasChildData.set(true);
+                }
+            });
+            if (!hasChildData.get()) {
+                throw new RuntimeException("Child Data is not set");
+            }
+            accountToProvision.getAccountData().getChildData().forEach((key, value) -> System.out.printf("%s=%s%n", key, value));
             this.init(objectType);
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
             validator.validate(this.form);
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
+            System.out.printf("objectClass: %s%n", objectClass);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
+            System.out.printf("ProvEvent: %s\n", provEvent);
+            System.out.printf("%s", provEvent.getFieldMappings());
             Set<Attribute> attributes = provEvent.buildAttributes();
+            System.out.printf("Attributes:%s\n", attributes);
             OperationOptions operationOptions = this.createOperationOptionsBuilder(CreateApiOp.class).build();
             OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_CREATE), attributes, scriptOptions);
@@ -228,7 +259,8 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             this.provisioningService.setFormField(this.processInstanceKey, provEvent.getUidFieldLabel(), uid.getUidValue());
             this.writeBack(objectClass, uid, provEvent);
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_CREATE), attributes, scriptOptions);
-        } catch (RuntimeException var10) {
+        } catch (RuntimeException | GenericProvisioningException | AccountNotFoundException | tcAPIException |
+                 tcDataAccessException | tcColumnNotFoundException | UserNotFoundException var10) {
             LOG.error(var10, "Error while creating user");
             responseCode = ExceptionUtil.getResponse(var10);
         }
