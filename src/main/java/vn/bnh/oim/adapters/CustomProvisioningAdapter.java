@@ -32,6 +32,7 @@ import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.api.operations.*;
 import org.identityconnectors.framework.common.objects.*;
 import vn.bnh.oim.utils.ApplicationInstanceUtil;
+import vn.bnh.oim.utils.LookupUtil;
 import vn.bnh.oim.utils.OIMUtil;
 
 import java.sql.Timestamp;
@@ -60,6 +61,16 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     private Schema schema;
     private OperationOptions operationOptions = (new OperationOptionsBuilder()).build();
     private ChildFormQuery formQuery;
+    private String roleFormatLookupTable;
+
+    public CustomProvisioningAdapter(String itResourceFieldName, String roleFormatLookupTable, long processInstanceKey, tcDataProvider dataProvider) {
+        this.itResourceFieldName = itResourceFieldName;
+        this.roleFormatLookupTable = roleFormatLookupTable;
+        this.processInstanceKey = processInstanceKey;
+        this.dataProvider = dataProvider;
+        OIMUtil.initialize();
+
+    }
 
     public CustomProvisioningAdapter(String itResourceFieldName, long processInstanceKey, tcDataProvider dataProvider) {
         this.itResourceFieldName = itResourceFieldName;
@@ -160,7 +171,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         System.out.println("===============================================");
         System.out.printf("Parameters: objectType:%s\n" + "objectClass: %s\n" + "proEvent: %s\n" + "attributes: %s\n" + "childFormQuery: %s=%s\n", objectType, objectClass, provEvent, attributes, childFormQuery.getType(), childFormQuery.getValue());
         Uid uid = provEvent.getUid();
-        System.out.printf("UID: %s%n", uid);
         String uidFieldLabel = provEvent.getUidFieldLabel();
         Uid retUid;
         OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
@@ -229,29 +239,42 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         String responseCode = "SUCCESS";
         try {
             Account accountToProvision = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
-            System.out.printf("Account data: %s%n", accountToProvision.getAccountData().getData());
-            System.out.printf("Child Data: %s%n%n", accountToProvision.getAccountData().getChildData());
             AtomicBoolean hasChildData = new AtomicBoolean(false);
-            accountToProvision.getAccountData().getChildData().entrySet().forEach(es -> {
-                if (es.getValue().size() > 0) {
+            accountToProvision.getAccountData().getChildData().forEach((key, value) -> {
+                if (value.size() > 0) {
                     hasChildData.set(true);
                 }
             });
             if (!hasChildData.get()) {
-                throw new RuntimeException("Child Data is not set");
+                System.out.println("Child Data is not set");
+                return "ERROR";
             }
-            accountToProvision.getAccountData().getChildData().forEach((key, value) -> System.out.printf("%s=%s%n", key, value));
+//            populate parent role's field
+            String roleFieldFormat = LookupUtil.getLookupValue(this.roleFormatLookupTable, this.itResourceFieldName);
+            System.out.printf("role field format: %s", roleFieldFormat);
+            if (roleFieldFormat == null || roleFieldFormat.isEmpty()) {
+                return "ERROR";
+            }
+            StringBuilder roleFieldValue = new StringBuilder("[");
+            ArrayList<String> roleList = new ArrayList<>();
+            accountToProvision.getAccountData().getChildData().forEach((key, value) -> value.forEach(ctr -> {
+                String roleFieldSubComponent = roleFieldFormat;
+                for (Map.Entry<String, Object> es : ctr.getChildData().entrySet()) {
+                    if (roleFieldFormat.contains(es.getKey())) {
+                        roleFieldSubComponent = roleFieldSubComponent.replace(es.getKey(), String.valueOf(es.getValue()));
+                    }
+                }
+                roleList.add(roleFieldSubComponent);
+            }));
+            roleFieldValue.append(String.join(",", roleList)).append("]");
+            System.out.printf("role field value:%s%n", roleFieldValue);
             this.init(objectType);
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
             validator.validate(this.form);
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
-            System.out.printf("objectClass: %s%n", objectClass);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
-            System.out.printf("ProvEvent: %s\n", provEvent);
-            System.out.printf("%s", provEvent.getFieldMappings());
             Set<Attribute> attributes = provEvent.buildAttributes();
-            System.out.printf("Attributes:%s\n", attributes);
             OperationOptions operationOptions = this.createOperationOptionsBuilder(CreateApiOp.class).build();
             OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_CREATE), attributes, scriptOptions);
