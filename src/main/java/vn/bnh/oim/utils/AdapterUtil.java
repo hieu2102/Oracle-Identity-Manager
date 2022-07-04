@@ -45,6 +45,7 @@ public class AdapterUtil {
             List<Map<String, String>> childTableData
     ) {
         logger.log(ODLLevel.INFO, "populate Role Field: {0}", parentRoleFieldLabel);
+
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setName(parentRoleFieldLabel);
         ArrayList<EmbeddedObject> attributeValue = new ArrayList<>();

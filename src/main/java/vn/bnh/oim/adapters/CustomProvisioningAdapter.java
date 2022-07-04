@@ -161,6 +161,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         try {
             logger.log(ODLLevel.INFO, "Enter customizedUpdateChildTableValue [{0}, {1}, {2}, {3}]", new Object[]{objectType, childTableName, childTablePK, this.processInstanceKey});
             Account acc = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
+//            child record can only be added or deleted -> if child data contains childTablePK -> DELETE OP else CREATE OP
             List<ChildTableRecord> childDataRecords = acc.getAccountData().getChildData().get(childTableName).stream().filter(childTableRecord -> !childTableRecord.getRowKey().equals(String.valueOf(childTablePK))).collect(Collectors.toList());
             this.init(objectType);
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
@@ -319,8 +320,8 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
 //            add role attribute
-            List<FieldMapping> childFieldMappings = provEvent.getFieldMappings().stream().filter(fm -> childTableName.equals(fm.getChildForm())).collect(Collectors.toList());
             Set<Attribute> attributes = provEvent.buildAttributes();
+            List<FieldMapping> childFieldMappings = provEvent.getFieldMappings().stream().filter(fm -> childTableName.equals(fm.getChildForm())).collect(Collectors.toList());
             attributes.add(AdapterUtil.populateRoleField(this.parentRoleFieldLabel, childFieldMappings, childTableData));
 //            end add role attribute
             OperationOptions operationOptions = this.createOperationOptionsBuilder(CreateApiOp.class).build();
@@ -587,6 +588,22 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
+    /**
+     * @deprecated
+     */
+    @Override
+    public String enableUser() {
+        return null;
+    }
+
+    /**
+     * @deprecated
+     */
+    @Override
+    public String disableUser() {
+        return null;
+    }
+
     public String updatePassword(
             String objectType,
             String passwordFieldLabel,
@@ -614,22 +631,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             LOG.error(var9, "Error in updateAttributeValue");
             return ExceptionUtil.getResponse(var9);
         }
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public String enableUser() {
-        return this.doEnable("User", true);
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public String disableUser() {
-        return this.doEnable("User", false);
     }
 
     public String enableObject(String objectType) {
@@ -673,11 +674,12 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     }
 
-    private String doEnable(
+    public String doEnable(
             String objectType,
             Boolean enabled
     ) {
         LOG.ok("Enter [{0}]", enabled);
+        logger.log(ODLLevel.INFO, "Enter [{0}, {1}]", new Object[]{objectType, enabled});
         String status;
 
         try {
@@ -693,6 +695,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             Schema schema = this.getConnectorSchema();
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, schema);
             Set<Attribute> attributes = provEvent.buildAttributes();
+            List<FieldMapping> childFieldMappings = provEvent.getFieldMappings().stream().filter(fm -> childTableName.equals(fm.getChildForm())).collect(Collectors.toList());
+            List<Map<String, String>> childTableData = this.form.getChildFormFieldValues().get(childTableName);
+            attributes.add(AdapterUtil.populateRoleField(this.parentRoleFieldLabel, childFieldMappings, childTableData));
             attributes.add(AttributeBuilder.buildEnabled(enabled));
             attributes.addAll(this.getCurrentAttributes(objectClass, new HashMap<>()));
             status = this.doUpdate(objectType, objectClass, provEvent, attributes);
@@ -719,7 +724,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         String uidFieldLabel = provEvent.getUidFieldLabel();
         LOG.ok("Uid: [{0}]", uid);
         String responseCode = "SUCCESS";
-
         try {
             //            add role field data
             boolean hasAttributeField = false;
