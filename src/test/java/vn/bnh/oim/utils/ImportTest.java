@@ -13,7 +13,7 @@ import javax.security.auth.login.LoginException;
 import java.util.Set;
 
 public class ImportTest {
-    String hostname = "10.10.11.54";
+    String hostname = "10.10.11.55";
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";

@@ -2,6 +2,7 @@ package vn.bnh.oim.adapters;
 
 import com.thortech.xl.dataaccess.tcDataProvider;
 import com.thortech.xl.ejb.beansimpl.tcFormInstanceOperationsBean;
+import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.connectors.icfcommon.Action.Timing;
 import oracle.iam.connectors.icfcommon.*;
@@ -197,6 +198,10 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ChildFormQuery childFormQuery
     ) {
         Uid uid = provEvent.getUid();
+        logger.log(ODLLevel.INFO, "UID: {0}", uid);
+        logger.log(ODLLevel.INFO, "input attributes: {0}", attributes);
+        logger.log(ODLLevel.INFO, "child form query value: {0}", childFormQuery.getValue());
+        logger.log(ODLLevel.INFO, "return SUCCESS if UID is null (account in PROVISIONING state): {0}", (null == uid));
 //        ensures method will not fail if account is in PROVISIONING state
         if (null != uid) {
             String uidFieldLabel = provEvent.getUidFieldLabel();
@@ -205,16 +210,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_UPDATE), attributes, scriptOptions);
             OperationOptions operationOptions = this.createOperationOptionsBuilder(UpdateApiOp.class).build();
             ChildFormQuery.Type type = childFormQuery.getType();
-            switch (type) {
-                case ADD:
-                    retUid = this.connectorFacade.addAttributeValues(objectClass, uid, attributes, operationOptions);
-                    break;
-                case DELETE:
-                    retUid = this.connectorFacade.removeAttributeValues(objectClass, uid, attributes, operationOptions);
-                    break;
-                default:
-                    retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
-            }
+            retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
             this.provisioningService.setFormField(this.processInstanceKey, uidFieldLabel, retUid.getUidValue());
             this.writeBack(objectClass, retUid, provEvent);
             this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_UPDATE), attributes, scriptOptions);
@@ -258,6 +254,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             List<FieldMapping> childFieldMappings,
             List<Map<String, String>> childTableData
     ) {
+        logger.log(ODLLevel.INFO, "populate Role Field: {0}", this.parentRoleFieldLabel);
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setName(this.parentRoleFieldLabel);
         ArrayList<EmbeddedObject> attributeValue = new ArrayList<>();
@@ -270,17 +267,21 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             attributeValue.add(eoBuilder.build());
         });
         attributeBuilder.addValue(attributeValue);
-        return attributeBuilder.build();
+        Attribute output = attributeBuilder.build();
+        logger.log(ODLLevel.INFO, "output: {0}", output);
+        return output;
     }
 
     public String createObject(String objectType) {
         OIMUtil.initialize();
+        logger.log(ODLLevel.INFO, "Enter Create Object: {0}", objectType);
         LOG.ok("Enter");
         String responseCode = "SUCCESS";
         try {
             this.init(objectType);
             List<Map<String, String>> childTableData = this.form.getChildFormFieldValues().get(childTableName);
             if (childTableData.size() == 0) {
+                logger.log(ODLLevel.ERROR, "Child Table Data is not set");
                 return "ERROR";
             }
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
@@ -350,8 +351,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
 //            Set<Attribute> attributes = provEvent.buildSingleAttributes(attrFieldName);
             Set<Attribute> attributes = provEvent.buildAttributes();
+            List<FieldMapping> childFieldMappings = provEvent.getFieldMappings().stream().filter(fm -> childTableName.equals(fm.getChildForm())).collect(Collectors.toList());
             List<Map<String, String>> childTableData = this.form.getChildFormFieldValues().get(childTableName);
-//            attributes.add(populateRoleField(childFieldMappings, childTableData));
+            attributes.add(populateRoleField(childFieldMappings, childTableData));
             String status = this.doUpdate(objectType, objectClass, provEvent, attributes);
             if (status != null && status.equals("SUCCESS") && transformedData != null && transformedData.size() > 0) {
                 this.writeBackTransformedParentForm(transformedData);

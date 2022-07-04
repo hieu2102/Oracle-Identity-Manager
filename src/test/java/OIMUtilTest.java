@@ -13,7 +13,7 @@ import vn.bnh.oim.utils.UserUtil;
 import javax.security.auth.login.LoginException;
 
 public class OIMUtilTest {
-    String hostname = "10.10.11.54";
+    String hostname = "10.10.11.55";
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";
@@ -21,8 +21,8 @@ public class OIMUtilTest {
     @Test
     public void testGetUser() throws UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException, LoginException {
         OIMUtil.localInitialize(hostname, port, username, passwd);
-        User user = UserUtil.getUser("USER@ORACLE.COM");
-        assert "USER@ORACLE.COM".equals(user.getLogin());
+        User user = UserUtil.getUser("XELSYSADM");
+        assert "XELSYSADM".equals(user.getLogin());
         ApplicationInstanceUtil.getProvisioningAccountsForUser(user, "TRM").forEach(System.out::println);
     }
 
