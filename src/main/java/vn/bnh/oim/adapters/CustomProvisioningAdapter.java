@@ -24,7 +24,6 @@ import oracle.iam.provisioning.exception.AccountNotFoundException;
 import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.exception.UserNotFoundException;
 import oracle.iam.provisioning.vo.Account;
-import oracle.iam.provisioning.vo.ApplicationInstance;
 import oracle.iam.provisioning.vo.ChildTableRecord;
 import org.identityconnectors.common.Assertions;
 import org.identityconnectors.common.CollectionUtil;
@@ -68,6 +67,9 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     private String parentRoleFieldLabel;
     private String childTableName;
 
+    /**
+     * @deprecated
+     */
     public CustomProvisioningAdapter(
             String itResourceFieldName,
             String roleFormatLookupTable,
@@ -78,6 +80,21 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     ) {
         this.itResourceFieldName = itResourceFieldName;
         this.roleFormatLookupTable = roleFormatLookupTable;
+        this.parentRoleFieldLabel = parentRoleFieldLabel;
+        this.childTableName = childTableName;
+        this.processInstanceKey = processInstanceKey;
+        this.dataProvider = dataProvider;
+        OIMUtil.initialize();
+    }
+
+    public CustomProvisioningAdapter(
+            String itResourceFieldName,
+            String childTableName,
+            String parentRoleFieldLabel,
+            long processInstanceKey,
+            tcDataProvider dataProvider
+    ) {
+        this.itResourceFieldName = itResourceFieldName;
         this.parentRoleFieldLabel = parentRoleFieldLabel;
         this.childTableName = childTableName;
         this.processInstanceKey = processInstanceKey;
@@ -130,8 +147,8 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
      * addChildTableValue adapter
      *
      * @param objectType      "User"
-     * @param childTableName
-     * @param childPrimaryKey
+     * @param childTableName  child table name in database (all caps, delimited by "_"; e.g: UD_CHILD_TABLE)
+     * @param childPrimaryKey child table primary key
      * @return success code
      */
     public String addChildTableValue(
@@ -674,7 +691,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     }
 
-    public String doEnable(
+    private String doEnable(
             String objectType,
             Boolean enabled
     ) {
