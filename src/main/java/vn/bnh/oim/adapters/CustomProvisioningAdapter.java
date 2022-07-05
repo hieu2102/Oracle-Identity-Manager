@@ -123,29 +123,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         this.init(ObjectType, formQuery);
     }
 
-    /**
-     * addChildTableValue adapter
-     *
-     * @param objectType      "User"
-     * @param childTableName  child table name in database (all caps, delimited by "_"; e.g: UD_CHILD_TABLE)
-     * @param childPrimaryKey child table primary key
-     * @return success code
-     */
-    public String addChildTableValue(String objectType, String childTableName, long childPrimaryKey) {
-        LOG.ok("Enter [{0}, {1}, {2}]", objectType, childTableName, childPrimaryKey);
-        String responseCode = "SUCCESS";
-        try {
-            ChildFormQuery childFormQuery = new ChildFormQuery(Type.ADD, childPrimaryKey);
-            this.doUpdateChildTableValue(objectType, childTableName, childFormQuery);
-        } catch (RuntimeException var7) {
-            LOG.error(var7, "Error while updating user");
-            responseCode = ExceptionUtil.getResponse(var7);
-        }
-
-        LOG.ok("Return [{0}]", responseCode);
-        return responseCode;
-    }
-
     public String customizedUpdateChildTableValue(String objectType, String childTableName, long childTablePK, Boolean isCreateOp) {
         try {
             logger.log(ODLLevel.INFO, "Enter customizedUpdateChildTableValue [objectType: {0}, childTableName: {1}, childPrimaryKey: {2}, processInstanceKey: {3}, isCreateOp: {4}]", new Object[]{objectType, childTableName, childTablePK, this.processInstanceKey, isCreateOp});
@@ -180,48 +157,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             return ExceptionUtil.getResponse(rte);
         }
 
-    }
-
-    public String removeChildTableValue(String objectType, String childTableName, Integer taskInstanceKey) {
-        return null;
-    }
-
-    /**
-     * @deprecated
-     */
-    public String updateChildTableValue(String objectType, String childTableName, Integer taskInstanceKey, long childPrimaryKey) {
-        return null;
-    }
-
-    private void doUpdateChildTableValue(String objectType, String childTableName, ChildFormQuery childFormQuery) {
-        this.init(objectType, childFormQuery);
-        Validation validator = Validation.newInstance(objectType, this.resourceConfig);
-        validator.validate(this.form);
-        ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
-        ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
-        ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, null);
-        Set<Attribute> attributes = provEvent.buildChildFormAttributes(childTableName);
-        attributes.addAll(this.getCurrentAttributes(objectClass, new HashMap<>()));
-        this.doUpdateChildTable(objectType, objectClass, provEvent, attributes, childFormQuery);
-    }
-
-
-    private void doUpdateChildTable(String objectType, ObjectClass objectClass, ProvEvent provEvent, Set<Attribute> attributes, ChildFormQuery childFormQuery) {
-        Uid uid = provEvent.getUid();
-        logger.log(ODLLevel.INFO, "Enter doUpdateChildTable: {0},{1}", new Object[]{uid, attributes});
-//        ensures method will not fail if account is in PROVISIONING state
-        if (null != uid) {
-            String uidFieldLabel = provEvent.getUidFieldLabel();
-            Uid retUid;
-            OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
-            this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_UPDATE), attributes, scriptOptions);
-            OperationOptions operationOptions = this.createOperationOptionsBuilder(UpdateApiOp.class).build();
-//            ChildFormQuery.Type type = childFormQuery.getType();
-            retUid = this.connectorFacade.update(objectClass, uid, attributes, operationOptions);
-            this.provisioningService.setFormField(this.processInstanceKey, uidFieldLabel, retUid.getUidValue());
-            this.writeBack(objectClass, retUid, provEvent);
-            this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_UPDATE), attributes, scriptOptions);
-        }
     }
 
     public void setEffectiveITResourceName(String itResourceName) {
@@ -311,7 +246,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     public String updateAttributeValue(String objectType, String attrFieldName) {
         LOG.ok("Enter");
-
         try {
             this.init(objectType);
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
@@ -334,7 +268,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     public String updateAttributeValues(String objectType, String[] labels) {
         LOG.ok("Enter");
-
         try {
             this.init(objectType);
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
@@ -349,7 +282,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             if (status != null && status.equals("SUCCESS") && transformedData != null && transformedData.size() > 0) {
                 this.writeBackTransformedParentForm(transformedData);
             }
-
             return status;
         } catch (RuntimeException var9) {
             LOG.error(var9, "Error in updateAttributeValue");
@@ -411,6 +343,11 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
+    @Override
+    public String updateChildTableValues(String s, String s1) {
+        return null;
+    }
+
     private Set<Attribute> getCurrentAttributes(ObjectClass objectClass, Map<String, String> oldFields) {
         LOG.ok("Enter");
         Schema schema = this.getConnectorSchema();
@@ -422,7 +359,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
                 return new HashSet<>();
             }
         }
-
         Form currentForm = this.getCurrentForm(this.form, oldFields);
         ProvEvent currentProvEvent = new ProvEvent(currentForm, this.provisioningLookup, objectClass, schema);
         Set<Attribute> currentAttributes = currentProvEvent.buildAttributes();
@@ -481,25 +417,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return fieldInfo;
     }
 
-    public String updateChildTableValues(String objectType, String childTableName) {
-        LOG.ok("Enter");
-
-        try {
-            this.init(objectType);
-            Validation validator = Validation.newInstance(objectType, this.resourceConfig);
-            validator.validate(this.form);
-            ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
-            ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
-            ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, null);
-            Set<Attribute> attributes = provEvent.buildChildFormAttributes(childTableName);
-            attributes.addAll(this.getCurrentAttributes(objectClass, new HashMap<>()));
-            return this.doUpdate(objectType, objectClass, provEvent, attributes);
-        } catch (RuntimeException var7) {
-            LOG.error(var7, "Error in updateAttributeValue");
-            return ExceptionUtil.getResponse(var7);
-        }
-    }
-
     /**
      * @deprecated
      */
@@ -547,6 +464,21 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     public String disableObject(String objectType) {
         return this.doEnable(objectType, false);
+    }
+
+    @Override
+    public String addChildTableValue(String s, String s1, long l) {
+        return null;
+    }
+
+    @Override
+    public String removeChildTableValue(String s, String s1, Integer integer) {
+        return null;
+    }
+
+    @Override
+    public String updateChildTableValue(String s, String s1, Integer integer, long l) {
+        return null;
     }
 
     private Set<String> fieldNameToLabel(Set<String> names) {
