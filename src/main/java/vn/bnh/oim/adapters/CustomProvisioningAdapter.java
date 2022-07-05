@@ -70,14 +70,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     /**
      * @deprecated
      */
-    public CustomProvisioningAdapter(
-            String itResourceFieldName,
-            String roleFormatLookupTable,
-            String childTableName,
-            String parentRoleFieldLabel,
-            long processInstanceKey,
-            tcDataProvider dataProvider
-    ) {
+    public CustomProvisioningAdapter(String itResourceFieldName, String roleFormatLookupTable, String childTableName, String parentRoleFieldLabel, long processInstanceKey, tcDataProvider dataProvider) {
         this.itResourceFieldName = itResourceFieldName;
         this.roleFormatLookupTable = roleFormatLookupTable;
         this.parentRoleFieldLabel = parentRoleFieldLabel;
@@ -87,13 +80,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         OIMUtil.initialize();
     }
 
-    public CustomProvisioningAdapter(
-            String itResourceFieldName,
-            String childTableName,
-            String parentRoleFieldLabel,
-            long processInstanceKey,
-            tcDataProvider dataProvider
-    ) {
+    public CustomProvisioningAdapter(String itResourceFieldName, String childTableName, String parentRoleFieldLabel, long processInstanceKey, tcDataProvider dataProvider) {
         this.itResourceFieldName = itResourceFieldName;
         this.parentRoleFieldLabel = parentRoleFieldLabel;
         this.childTableName = childTableName;
@@ -102,21 +89,14 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         OIMUtil.initialize();
     }
 
-    public CustomProvisioningAdapter(
-            String itResourceFieldName,
-            long processInstanceKey,
-            tcDataProvider dataProvider
-    ) {
+    public CustomProvisioningAdapter(String itResourceFieldName, long processInstanceKey, tcDataProvider dataProvider) {
         this.itResourceFieldName = itResourceFieldName;
         this.processInstanceKey = processInstanceKey;
         this.dataProvider = dataProvider;
         OIMUtil.initialize();
     }
 
-    private void init(
-            String objectType,
-            ChildFormQuery formQuery
-    ) {
+    private void init(String objectType, ChildFormQuery formQuery) {
         this.provisioningService = ServiceFactory.getService(ProvisioningService.class, this.dataProvider);
         this.formQuery = formQuery;
         this.form = this.provisioningService.getForm(this.processInstanceKey, this.formQuery);
@@ -151,11 +131,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
      * @param childPrimaryKey child table primary key
      * @return success code
      */
-    public String addChildTableValue(
-            String objectType,
-            String childTableName,
-            long childPrimaryKey
-    ) {
+    public String addChildTableValue(String objectType, String childTableName, long childPrimaryKey) {
         LOG.ok("Enter [{0}, {1}, {2}]", objectType, childTableName, childPrimaryKey);
         String responseCode = "SUCCESS";
         try {
@@ -170,22 +146,29 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return responseCode;
     }
 
-    public String customizedUpdateChildTableValue(
-            String objectType,
-            String childTableName,
-            long childTablePK
-    ) {
+    public String customizedUpdateChildTableValue(String objectType, String childTableName, long childTablePK, Boolean isCreateOp) {
         try {
-            logger.log(ODLLevel.INFO, "Enter customizedUpdateChildTableValue [{0}, {1}, {2}, {3}]", new Object[]{objectType, childTableName, childTablePK, this.processInstanceKey});
+            logger.log(ODLLevel.INFO, "Enter customizedUpdateChildTableValue [objectType: {0}, childTableName: {1}, childPrimaryKey: {2}, processInstanceKey: {3}, isCreateOp: {4}]", new Object[]{objectType, childTableName, childTablePK, this.processInstanceKey, isCreateOp});
             Account acc = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
+            List<ChildTableRecord> childDataRecords = acc.getAccountData().getChildData().get(childTableName);
 //            child record can only be added or deleted -> if child data contains childTablePK -> DELETE OP else CREATE OP
-            List<ChildTableRecord> childDataRecords = acc.getAccountData().getChildData().get(childTableName).stream().filter(childTableRecord -> !childTableRecord.getRowKey().equals(String.valueOf(childTablePK))).collect(Collectors.toList());
+            logger.log(ODLLevel.INFO, "Initial Child Table Record List size: {0}", childDataRecords.size());
+            if (!isCreateOp) {
+                logger.info("Execute DELETE OP");
+                childDataRecords = childDataRecords.stream().filter(x -> !x.getRowKey().equals(String.valueOf(childTablePK))).collect(Collectors.toList());
+            }
+            logger.log(ODLLevel.INFO, "Filtered Child Table Record List size: {0}", childDataRecords.size());
             this.init(objectType);
             Validation validator = Validation.newInstance(objectType, this.resourceConfig);
             validator.validate(this.form);
             ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
             ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
             ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, null);
+            Uid uid = provEvent.getUid();
+            if (null == uid) {
+                logger.log(ODLLevel.INFO, "Account is in PROVISIONING state, will not send request to target system");
+                return "SUCCESS";
+            }
             Set<Attribute> attributes = provEvent.buildAttributes();
             List<FieldMapping> childFieldMappings = provEvent.getFieldMappings().stream().filter(fm -> childTableName.equals(fm.getChildForm())).collect(Collectors.toList());
             attributes.add(AdapterUtil.parseRoleFieldFromChildRecord(this.parentRoleFieldLabel, childFieldMappings, childDataRecords));
@@ -196,53 +179,21 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             logger.log(ODLLevel.TRACE, "{0}", Arrays.toString(rte.getStackTrace()));
             return ExceptionUtil.getResponse(rte);
         }
+
     }
 
-    public String removeChildTableValue(
-            String objectType,
-            String childTableName,
-            Integer taskInstanceKey
-    ) {
-        LOG.ok("Enter [{0}, {1}, {2}]", objectType, childTableName, taskInstanceKey);
-        String responseCode = "SUCCESS";
-
-        try {
-            ChildFormQuery childFormQuery = new ChildFormQuery(Type.DELETE, taskInstanceKey);
-            this.doUpdateChildTableValue(objectType, childTableName, childFormQuery);
-        } catch (RuntimeException var6) {
-            LOG.error(var6, "Error while updating user");
-            responseCode = ExceptionUtil.getResponse(var6);
-        }
-        LOG.ok("Return [{0}]", responseCode);
-        return responseCode;
+    public String removeChildTableValue(String objectType, String childTableName, Integer taskInstanceKey) {
+        return null;
     }
 
-    public String updateChildTableValue(
-            String objectType,
-            String childTableName,
-            Integer taskInstanceKey,
-            long childPrimaryKey
-    ) {
-        LOG.ok("Enter [{0},{1},{2},{3}]", objectType, childTableName, taskInstanceKey, childPrimaryKey);
-        String responseCode;
-
-        try {
-            this.removeChildTableValue(objectType, childTableName, taskInstanceKey);
-            responseCode = this.addChildTableValue(objectType, childTableName, childPrimaryKey);
-        } catch (RuntimeException var8) {
-            LOG.error(var8, "Error while updating user");
-            responseCode = ExceptionUtil.getResponse(var8);
-        }
-
-        LOG.ok("Return [{0}]", responseCode);
-        return responseCode;
+    /**
+     * @deprecated
+     */
+    public String updateChildTableValue(String objectType, String childTableName, Integer taskInstanceKey, long childPrimaryKey) {
+        return null;
     }
 
-    private void doUpdateChildTableValue(
-            String objectType,
-            String childTableName,
-            ChildFormQuery childFormQuery
-    ) {
+    private void doUpdateChildTableValue(String objectType, String childTableName, ChildFormQuery childFormQuery) {
         this.init(objectType, childFormQuery);
         Validation validator = Validation.newInstance(objectType, this.resourceConfig);
         validator.validate(this.form);
@@ -255,13 +206,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
     }
 
 
-    private void doUpdateChildTable(
-            String objectType,
-            ObjectClass objectClass,
-            ProvEvent provEvent,
-            Set<Attribute> attributes,
-            ChildFormQuery childFormQuery
-    ) {
+    private void doUpdateChildTable(String objectType, ObjectClass objectClass, ProvEvent provEvent, Set<Attribute> attributes, ChildFormQuery childFormQuery) {
         Uid uid = provEvent.getUid();
         logger.log(ODLLevel.INFO, "Enter doUpdateChildTable: {0},{1}", new Object[]{uid, attributes});
 //        ensures method will not fail if account is in PROVISIONING state
@@ -357,38 +302,14 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return responseCode;
     }
 
+    /**
+     * @deprecated
+     */
     public String deleteObject(String objectType) {
-        LOG.ok("Enter");
-        String responseCode = "SUCCESS";
-
-        try {
-            this.init(objectType);
-            Validation validator = Validation.newInstance(objectType, this.resourceConfig);
-            validator.validate(this.form);
-            ResourceExclusion.newInstance(objectType, this.resourceConfig).processExclusions(this.form);
-            ObjectClass objectClass = TypeUtil.convertObjectType(objectType);
-            ProvEvent provEvent = new ProvEvent(this.form, this.provisioningLookup, objectClass, this.getConnectorSchema());
-            Uid uid = provEvent.getUid();
-            OperationOptions operationOptions = this.createOperationOptionsBuilder(DeleteApiOp.class).build();
-            Set<Attribute> attributes = new HashSet<>();
-            attributes.add(uid);
-            OperationOptions scriptOptions = this.createOperationOptionsBuilder(ScriptOnConnectorApiOp.class).build();
-            this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.BEFORE_DELETE), attributes, scriptOptions);
-            this.connectorFacade.delete(objectClass, uid, operationOptions);
-            this.connectorOpHelper.execute(this.resourceConfig.getAction(objectType, Timing.AFTER_DELETE), attributes, scriptOptions);
-        } catch (RuntimeException var10) {
-            LOG.error(var10, "Error while deleting user");
-            responseCode = ExceptionUtil.getResponse(var10);
-        }
-
-        LOG.ok("Return [{0}]", responseCode);
-        return responseCode;
+        return null;
     }
 
-    public String updateAttributeValue(
-            String objectType,
-            String attrFieldName
-    ) {
+    public String updateAttributeValue(String objectType, String attrFieldName) {
         LOG.ok("Enter");
 
         try {
@@ -411,10 +332,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    public String updateAttributeValues(
-            String objectType,
-            String[] labels
-    ) {
+    public String updateAttributeValues(String objectType, String[] labels) {
         LOG.ok("Enter");
 
         try {
@@ -439,10 +357,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    public String updateAttributeValues(
-            String objectType,
-            Map<String, String> fields
-    ) {
+    public String updateAttributeValues(String objectType, Map<String, String> fields) {
         LOG.ok("Enter");
 
         try {
@@ -462,11 +377,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    public String updateAttributeValues(
-            String objectType,
-            Map<String, String> fields,
-            Map<String, String> oldFields
-    ) {
+    public String updateAttributeValues(String objectType, Map<String, String> fields, Map<String, String> oldFields) {
         LOG.ok("Enter");
 
         try {
@@ -500,10 +411,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    private Set<Attribute> getCurrentAttributes(
-            ObjectClass objectClass,
-            Map<String, String> oldFields
-    ) {
+    private Set<Attribute> getCurrentAttributes(ObjectClass objectClass, Map<String, String> oldFields) {
         LOG.ok("Enter");
         Schema schema = this.getConnectorSchema();
         ObjectClassInfo ocInfo = schema == null ? null : schema.findObjectClassInfo(objectClass.getObjectClassValue());
@@ -524,11 +432,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return completeAttributes;
     }
 
-    private Set<Attribute> getTemplateAttributes(
-            ObjectClass objectClass,
-            ProvEvent provEvent,
-            Map<String, String> oldFields
-    ) {
+    private Set<Attribute> getTemplateAttributes(ObjectClass objectClass, ProvEvent provEvent, Map<String, String> oldFields) {
         LOG.ok("Enter");
         Set<Attribute> templateAttributes = provEvent.buildTemplateAttributes();
         if (templateAttributes != null && templateAttributes.size() > 0) {
@@ -543,10 +447,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return new HashSet<>();
     }
 
-    private Form getCurrentForm(
-            Form form,
-            Map<String, String> oldFields
-    ) {
+    private Form getCurrentForm(Form form, Map<String, String> oldFields) {
         if (this.currentForm == null) {
             Set<Form.FieldInfo> fieldInfo = form.getFieldInfo();
             Map<String, String> fieldValues = new HashMap<>(form.getFieldValues());
@@ -565,10 +466,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return this.currentForm;
     }
 
-    private static Form.FieldInfo getFieldInfoByName(
-            Set<Form.FieldInfo> fieldInfoSet,
-            String fieldName
-    ) {
+    private static Form.FieldInfo getFieldInfoByName(Set<Form.FieldInfo> fieldInfoSet, String fieldName) {
         Iterator<Form.FieldInfo> fieldInfoIterator = fieldInfoSet.iterator();
 
         Form.FieldInfo fieldInfo;
@@ -583,10 +481,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return fieldInfo;
     }
 
-    public String updateChildTableValues(
-            String objectType,
-            String childTableName
-    ) {
+    public String updateChildTableValues(String objectType, String childTableName) {
         LOG.ok("Enter");
 
         try {
@@ -621,11 +516,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return null;
     }
 
-    public String updatePassword(
-            String objectType,
-            String passwordFieldLabel,
-            String oldPassword
-    ) {
+    public String updatePassword(String objectType, String passwordFieldLabel, String oldPassword) {
         LOG.ok("Enter");
 
         try {
@@ -673,10 +564,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return labels;
     }
 
-    private void addProvidedOnPasswordChange(
-            ProvEvent provEvent,
-            Set<Attribute> attributes
-    ) {
+    private void addProvidedOnPasswordChange(ProvEvent provEvent, Set<Attribute> attributes) {
         Set<FieldMapping> onUpdateMappings = provEvent.getFieldMappingByFlag(FieldFlag.PROVIDEONPSWDCHANGE);
         if (onUpdateMappings.size() > 0) {
             List<String> fieldLabels = new ArrayList<>();
@@ -691,10 +579,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     }
 
-    private String doEnable(
-            String objectType,
-            Boolean enabled
-    ) {
+    private String doEnable(String objectType, Boolean enabled) {
         LOG.ok("Enter [{0}]", enabled);
         logger.log(ODLLevel.INFO, "Enter [{0}, {1}]", new Object[]{objectType, enabled});
         String status;
@@ -729,12 +614,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    private String doUpdate(
-            String objectType,
-            ObjectClass objectClass,
-            ProvEvent provEvent,
-            Set<Attribute> attributes
-    ) {
+    private String doUpdate(String objectType, ObjectClass objectClass, ProvEvent provEvent, Set<Attribute> attributes) {
         logger.log(ODLLevel.INFO, "Enter doUpdate: {0},{1},{2}", new Object[]{objectType, objectClass, attributes});
         LOG.ok("Enter [{0}, {1}]", objectType, attributes);
         Uid uid = provEvent.getUid();
@@ -774,11 +654,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return responseCode;
     }
 
-    private void writeBack(
-            ObjectClass objectClass,
-            Uid uid,
-            ProvEvent provEvent
-    ) {
+    private void writeBack(ObjectClass objectClass, Uid uid, ProvEvent provEvent) {
         LOG.ok("Enter [{0}, {1}]", objectClass, uid);
         LOG.ok(" FieldMappings [{0}]", provEvent.getFieldMappingByFlag(FieldFlag.WRITEBACK));
         Set<FieldMapping> writeBackFieldMappings = provEvent.getFieldMappingByFlag(FieldFlag.WRITEBACK);
@@ -846,10 +722,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return childFieldInfo.getName();
     }
 
-    private void writeBackParentForm(
-            Set<FieldMapping> writeBackFieldMappings,
-            ConnectorObject connectorObject
-    ) {
+    private void writeBackParentForm(Set<FieldMapping> writeBackFieldMappings, ConnectorObject connectorObject) {
 
         for (FieldMapping fieldMapping : writeBackFieldMappings) {
             Attribute attribute = connectorObject.getAttributeByName(fieldMapping.getAttributeName());
@@ -889,11 +762,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
 
     }
 
-    private void writeBackChildForm(
-            Set<FieldMapping> writeBackFieldMappings,
-            ConnectorObject connectorObject,
-            ProvEvent provEvent
-    ) {
+    private void writeBackChildForm(Set<FieldMapping> writeBackFieldMappings, ConnectorObject connectorObject, ProvEvent provEvent) {
         Map<String, Set<FieldMapping>> wbFieldMappingsByChild = this.splitWriteBackFieldMappingsByChildForm(writeBackFieldMappings);
         Map<String, Map<String, List<Object>>> conToOimChildFieldNameMap = this.getConToOimChildFieldNameMap(provEvent.getFieldMappings(), wbFieldMappingsByChild.keySet());
 
@@ -980,10 +849,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         }
     }
 
-    private boolean isWriteBackAttribute(
-            String attrName,
-            Set<FieldMapping> wbFieldMappingsPerChild
-    ) {
+    private boolean isWriteBackAttribute(String attrName, Set<FieldMapping> wbFieldMappingsPerChild) {
         Iterator<FieldMapping> var3 = wbFieldMappingsPerChild.iterator();
 
         FieldMapping fieldMapping;
@@ -1015,10 +881,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         return wbFieldMappingsByChild;
     }
 
-    private Map<String, Map<String, List<Object>>> getConToOimChildFieldNameMap(
-            Set<FieldMapping> fieldMappings,
-            Set<String> childNames
-    ) {
+    private Map<String, Map<String, List<Object>>> getConToOimChildFieldNameMap(Set<FieldMapping> fieldMappings, Set<String> childNames) {
         Map<String, Map<String, List<Object>>> conToOimChildFieldNameMap = new HashMap<>();
         Iterator<FieldMapping> var4 = fieldMappings.iterator();
 

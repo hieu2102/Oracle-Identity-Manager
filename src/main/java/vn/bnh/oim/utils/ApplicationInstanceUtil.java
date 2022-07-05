@@ -19,6 +19,7 @@ import oracle.iam.provisioning.exception.*;
 import oracle.iam.provisioning.vo.Account;
 import oracle.iam.provisioning.vo.AccountData;
 import oracle.iam.provisioning.vo.ApplicationInstance;
+import oracle.iam.provisioning.vo.ChildTableRecord;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -99,6 +100,25 @@ public class ApplicationInstanceUtil {
         AccountData accountData = new AccountData(String.valueOf(resourceFormKey), udTablePrimaryKey, parentData);
         Account resAccount = new Account(appInst, accountData);
         provisioningService.provision(user.getId(), resAccount);
+    }
+
+    public static void provisionAccount(String userLogin, String appInstName, Map<String, Object> parentData, Map<String, Object> childData) throws UserNotFoundException, ApplicationInstanceNotFoundException, GenericProvisioningException, UserLookupException, NoSuchUserException, GenericAppInstanceServiceException, tcAPIException, tcTaskNotFoundException, tcColumnNotFoundException {
+        User user = UserUtil.getUser(userLogin);
+        ApplicationInstance appInst = applicationInstanceService.findApplicationInstanceByName(appInstName);
+        Long resourceFormKey = appInst.getAccountForm().getFormKey();
+        String udTablePrimaryKey = null;
+        AccountData accountData = new AccountData(String.valueOf(resourceFormKey), udTablePrimaryKey, parentData);
+        ChildTableRecord ctr = new ChildTableRecord();
+        ctr.setChildData(childData);
+        ArrayList<ChildTableRecord> listChild = new ArrayList<>();
+        listChild.add(ctr);
+        HashMap<String, ArrayList<ChildTableRecord>> childTableMap = new HashMap<>();
+        childTableMap.put("UD_GROUPS", listChild);
+        accountData.setChildData(childTableMap);
+        Account resAccount = new Account(appInst, accountData);
+        provisioningService.provision(user.getId(), resAccount);
+        ApplicationInstanceUtil.retryAccountProvision(resAccount);
+
     }
 
     public static Account getAccountByProcessInstKey(long processInstKey) throws GenericProvisioningException, AccountNotFoundException, tcAPIException, tcDataAccessException, tcColumnNotFoundException, UserNotFoundException {

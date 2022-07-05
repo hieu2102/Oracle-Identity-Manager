@@ -11,6 +11,7 @@ import vn.bnh.oim.utils.OIMUtil;
 import vn.bnh.oim.utils.UserUtil;
 
 import javax.security.auth.login.LoginException;
+import java.util.HashMap;
 
 public class OIMUtilTest {
     String hostname = "10.10.11.55";
@@ -41,5 +42,13 @@ public class OIMUtilTest {
         OIMUtil.localInitialize(hostname, port, username, passwd);
         int outputSize = ApplicationInstanceUtil.getProvisioningAccount("TRM").size();
         System.out.println(outputSize);
+    }
+
+    @Test
+    public void testProvisionAccount() throws Exception {
+        OIMUtil.localInitialize(hostname, port, username, passwd);
+        HashMap<String, Object> childData = new HashMap<>();
+        childData.put("UD_GROUPS_GROUP_NAME", "group1");
+        ApplicationInstanceUtil.provisionAccount("USER@ORACLE.COM", "FlexCash", new HashMap<>(), childData);
     }
 }

@@ -19,6 +19,7 @@ public class AdapterUtil {
             List<FieldMapping> childFieldMappings,
             List<ChildTableRecord> childDataRecords
     ) {
+        logger.log(ODLLevel.INFO, "Enter parseRoleFieldFromChildRecord [{0},{1},{2}]", new Object[]{outputAttributeName, childFieldMappings, childDataRecords});
         AttributeBuilder attributeBuilder = new AttributeBuilder();
         attributeBuilder.setName(outputAttributeName);
         ArrayList<EmbeddedObject> attributeValue = new ArrayList<>();
