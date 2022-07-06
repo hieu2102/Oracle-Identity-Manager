@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--file location ${DOMAIN_HOME}/config/fmwconfig/servers/${OIM_MANAGED_SERVER}/logging.xml-->
+<logging_configuration>
+    <log_handlers>
+        <log_handler name='custom-adapter' level='TRACE:32' class='oracle.core.ojdl.logging.ODLHandlerFactory'
+                     formatter='oracle.core.ojdl.weblogic.ConsoleFormatter'>
+            <property name='path' value='${domain.home}/servers/oim_server1/logs/custom-adapter.log'/>
+            <property name='useThreadName' value='true'/>
+            <property name='maxFileSize' value='5242880'/>
+            <property name='maxLogSize' value='52428800'/>
+            <property name='encoding' value='UTF-8'/>
+        </log_handler>
+    </log_handlers>
+    <loggers>
+        <logger name='vn.bnh.oim.adapters.CustomProvisioningAdapter' level="TRACE:32" useParentHandlers="false">
+            <handler name="custom-adapter"/>
+        </logger>
+    </loggers>
+</logging_configuration>

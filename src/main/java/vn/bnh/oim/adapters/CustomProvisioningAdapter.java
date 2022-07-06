@@ -128,7 +128,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
             logger.log(ODLLevel.INFO, "Enter customizedUpdateChildTableValue [objectType: {0}, childTableName: {1}, childPrimaryKey: {2}, processInstanceKey: {3}, isCreateOp: {4}]", new Object[]{objectType, childTableName, childTablePK, this.processInstanceKey, isCreateOp});
             Account acc = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
             List<ChildTableRecord> childDataRecords = acc.getAccountData().getChildData().get(childTableName);
-//            child record can only be added or deleted -> if child data contains childTablePK -> DELETE OP else CREATE OP
             logger.log(ODLLevel.INFO, "Initial Child Table Record List size: {0}", childDataRecords.size());
             if (!isCreateOp) {
                 logger.info("Execute DELETE OP");
