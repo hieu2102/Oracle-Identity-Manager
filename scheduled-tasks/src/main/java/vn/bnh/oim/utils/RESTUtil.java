@@ -1,5 +1,7 @@
 package vn.bnh.oim.utils;
 
+import com.sun.org.slf4j.internal.Logger;
+import com.sun.org.slf4j.internal.LoggerFactory;
 import org.json.JSONObject;
 
 import java.io.*;
@@ -10,11 +12,12 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 
 public class RESTUtil {
+    private static final Logger logger = LoggerFactory.getLogger(RESTUtil.class);
     private static final String FROM_ID = "IDM";
     private static final String FROM_NAME = "IDM";
     private static final SimpleDateFormat ID_FORMAT = new SimpleDateFormat("yyyyMMddHH24mmss");
 
-    private static JSONObject buildHeader(String resourceObjName) {
+    public static JSONObject buildHeader(String resourceObjName) {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         JSONObject headerContent = new JSONObject();
         headerContent.put("MessageId", ID_FORMAT.format(timestamp));
@@ -24,6 +27,7 @@ public class RESTUtil {
         headerContent.put("ToName", resourceObjName);
         headerContent.put("DateTime", "");
         headerContent.put("Signature", "");
+        logger.debug("{}", headerContent);
         return headerContent;
     }
 
