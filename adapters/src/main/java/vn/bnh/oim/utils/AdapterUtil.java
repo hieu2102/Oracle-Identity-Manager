@@ -3,16 +3,62 @@ package vn.bnh.oim.utils;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.connectors.icfcommon.FieldMapping;
+import oracle.iam.provisioning.vo.ApplicationInstance;
 import oracle.iam.provisioning.vo.ChildTableRecord;
 import org.identityconnectors.framework.common.objects.*;
 import vn.bnh.oim.adapters.CustomProvisioningAdapter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class AdapterUtil {
     private static final ODLLogger logger = ODLLogger.getODLLogger(CustomProvisioningAdapter.class.getName());
+
+    private static final String[] HEADER_FIELDS = new String[]{"MessageId", "FromId", "FromName", "ToId", "ToName", "DateTime", "Signature"};
+    private static final SimpleDateFormat ID_FORMAT = new SimpleDateFormat("yyyyMMddHH24mmss");
+
+    public static Set<Attribute> generateRequestBody(
+            ApplicationInstance applicationInstance,
+            Set<Attribute> payload
+    ) {
+        Set<Attribute> requestBody = new HashSet<>();
+        requestBody.add(generateHeader(applicationInstance));
+        requestBody.add(wrapPayload(payload));
+        return requestBody;
+    }
+
+    public static Attribute generateHeader(ApplicationInstance appInst) {
+        String targetAppId = appInst.getDisplayName() + "_API";
+        AttributeBuilder attributeBuilder = new AttributeBuilder();
+        attributeBuilder.setName("Header");
+        EmbeddedObjectBuilder eoBuilder = new EmbeddedObjectBuilder();
+        Arrays.stream(HEADER_FIELDS).forEach(field -> {
+            eoBuilder.setObjectClass(ObjectClass.GROUP);
+            if (field.equals("MessageId")) {
+                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+                eoBuilder.addAttribute(field, ID_FORMAT.format(timestamp));
+            }
+            if (field.startsWith("From")) {
+                eoBuilder.addAttribute(field, "IDM");
+            }
+            if (field.startsWith("To")) {
+                eoBuilder.addAttribute(field, targetAppId);
+            }
+            if (field.equals("DateTime") || field.equals("Signature")) {
+                eoBuilder.addAttribute(field, "");
+            }
+        });
+        attributeBuilder.addValue(eoBuilder.build());
+        return attributeBuilder.build();
+    }
+
+    public static Attribute wrapPayload(Set<Attribute> attributeSet) {
+        AttributeBuilder attributeBuilder = new AttributeBuilder();
+        attributeBuilder.setName("Payload");
+        attributeBuilder.addValue(attributeSet);
+        return attributeBuilder.build();
+    }
 
     public static Attribute parseRoleFieldFromChildRecord(
             String outputAttributeName,
