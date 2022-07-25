@@ -9,21 +9,34 @@ import Thor.API.tcResultSet;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class LookupUtil {
     static tcLookupOperationsIntf tcLookupOperationsIntf = OIMUtil.tcLookupOperationsIntf;
     private static final ODLLogger logger = ODLLogger.getODLLogger(LookupUtil.class.getName());
 
-    public static void setLookupValue(String lookupTable, String code, String meaning) throws tcInvalidLookupException, tcInvalidValueException, tcAPIException {
+    public static void setLookupValue(
+            String lookupTable,
+            String code,
+            String meaning
+    ) throws tcInvalidLookupException, tcInvalidValueException, tcAPIException {
         tcLookupOperationsIntf.addLookupValue(lookupTable, code, meaning, "en", "US");
     }
 
-    public static void removeLookupEntryByKey(String lookupTable, String code) throws tcInvalidLookupException, tcInvalidValueException, tcAPIException {
+    public static void removeLookupEntryByKey(
+            String lookupTable,
+            String code
+    ) throws tcInvalidLookupException, tcInvalidValueException, tcAPIException {
         tcLookupOperationsIntf.removeLookupValue(lookupTable, code);
     }
 
-    public static void removeLookupEntryByValue(String lookupTable, String meaning) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException, tcInvalidValueException {
-        tcResultSet lookupCodeSet = tcLookupOperationsIntf.getLookupValues(lookupTable);
+    public static void removeLookupEntryByValue(
+            String lookupTable,
+            String meaning
+    ) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException, tcInvalidValueException {
+        tcResultSet lookupCodeSet = getLookupValues(lookupTable);
         String lookupCode = null;
         if (lookupCodeSet.getTotalRowCount() > 0) {
             for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
@@ -37,7 +50,51 @@ public class LookupUtil {
         removeLookupEntryByKey(lookupTable, lookupCode);
     }
 
-    public static String getLookupValue(String lookupTable, String code) {
+    public static tcResultSet getLookupValues(String lookupTable) throws tcInvalidLookupException, tcAPIException {
+        return tcLookupOperationsIntf.getLookupValues(lookupTable);
+    }
+
+    public static void updateLookupValue(
+            String lookupTable,
+            String lookupKey,
+            String newValue
+    ) throws tcInvalidLookupException, tcInvalidValueException, tcAPIException {
+        tcLookupOperationsIntf.updateLookupValue(lookupTable, lookupKey, "", newValue, "", "");
+    }
+
+    public static void updateLookupTable(
+            String lookupTable,
+            HashMap<String, String> entries
+    ) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException, tcInvalidValueException {
+//        get existing lookup entries
+        tcResultSet lookupCodeSet = getLookupValues(lookupTable);
+        HashMap<String, String> existingEntries = new HashMap<>();
+        if (lookupCodeSet.getTotalRowCount() > 0) {
+            for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
+                lookupCodeSet.goToRow(i);
+                String lookupKey = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
+                String lookupValue = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode");
+                existingEntries.put(lookupKey, lookupValue);
+            }
+        }
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (existingEntries.containsKey(key) && !existingEntries.get(key).equals(value)) {
+//                update
+                updateLookupValue(lookupTable, key, value);
+            } else {
+//                insert
+                setLookupValue(lookupTable, key, value);
+            }
+
+        }
+    }
+
+    public static String getLookupValue(
+            String lookupTable,
+            String code
+    ) {
         String output = null;
         try {
             output = tcLookupOperationsIntf.getDecodedValueForEncodedValue(lookupTable, code);

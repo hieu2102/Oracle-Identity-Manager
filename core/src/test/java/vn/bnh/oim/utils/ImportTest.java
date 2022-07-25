@@ -8,18 +8,17 @@ import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.exception.UserNotFoundException;
 import oracle.iam.provisioning.vo.Account;
 import org.junit.Test;
-import vn.bnh.oim.utils.ApplicationInstanceUtil;
 
 import javax.security.auth.login.LoginException;
 import java.util.Set;
 
 public class ImportTest {
-    String hostname = "10.10.11.55";
+    String hostname = "10.10.11.54";
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";
-    String jarDir = "/tmp/ScheduledTask-1.0.jar";
-    String jarName = "ScheduledTask-1.0.jar";
+    String jarDir = "/tmp/adapters-1.0.jar";
+    String jarName = "adapters-1.0.jar";
 
     @Test
     public void importJar() throws LoginException, PlatformServiceException {

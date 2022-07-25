@@ -131,6 +131,7 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         try {
             logger.log(ODLLevel.INFO, "Enter customizedUpdateChildTableValue [objectType: {0}, childTableName: {1}, childPrimaryKey: {2}, processInstanceKey: {3}, isCreateOp: {4}]", new Object[]{objectType, childTableName, childTablePK, this.processInstanceKey, isCreateOp});
             Account acc = ApplicationInstanceUtil.getAccountByProcessInstKey(this.processInstanceKey);
+            assert acc != null;
             List<ChildTableRecord> childDataRecords = acc.getAccountData().getChildData().get(childTableName);
             logger.log(ODLLevel.INFO, "Initial Child Table Record List size: {0}", childDataRecords.size());
             if (!isCreateOp) {
