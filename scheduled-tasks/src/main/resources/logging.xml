@@ -12,7 +12,7 @@
         </log_handler>
     </log_handlers>
     <loggers>
-        <logger name='vn.bnh.oim.adapters.CustomProvisioningAdapter' level="TRACE:32" useParentHandlers="false">
+        <logger name='adapters.CustomProvisioningAdapter' level="TRACE:32" useParentHandlers="false">
             <handler name="custom-adapter"/>
         </logger>
     </loggers>

@@ -1,3 +1,5 @@
+package vn.bnh.oim.utils;
+
 import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
 import oracle.iam.identity.exception.NoSuchUserException;
@@ -14,7 +16,7 @@ import javax.security.auth.login.LoginException;
 import java.util.HashMap;
 
 public class OIMUtilTest {
-    String hostname = "10.10.11.55";
+    String hostname = "10.10.11.54";
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";
@@ -34,6 +36,9 @@ public class OIMUtilTest {
         ApplicationInstanceUtil.getProvisioningAccountsForUser(user, "TRM").forEach(x -> {
             assert user.getId().equals(x.getUserKey());
             assert "TRM".equals(x.getAppInstance().getApplicationInstanceName());
+            x.getAppInstance().getChildForms().stream().forEach(cf -> {
+                System.out.println(cf.getDescription());
+            });
         });
     }
 

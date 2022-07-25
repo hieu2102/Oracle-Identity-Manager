@@ -8,6 +8,7 @@ import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.exception.UserNotFoundException;
 import oracle.iam.provisioning.vo.Account;
 import org.junit.Test;
+import vn.bnh.oim.utils.ApplicationInstanceUtil;
 
 import javax.security.auth.login.LoginException;
 import java.util.Set;
