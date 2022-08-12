@@ -4,13 +4,11 @@ import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
 import oracle.iam.identity.exception.NoSuchUserException;
 import oracle.iam.identity.exception.UserLookupException;
+import oracle.iam.identity.exception.UserSearchException;
 import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.exception.UserNotFoundException;
 import org.junit.Test;
-import vn.bnh.oim.utils.ApplicationInstanceUtil;
-import vn.bnh.oim.utils.OIMUtil;
-import vn.bnh.oim.utils.UserUtil;
 
 import javax.security.auth.login.LoginException;
 import java.util.HashMap;
@@ -20,6 +18,13 @@ public class OIMUtilTest {
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";
+
+    @Test
+    public void testUserLoginGeneration() throws LoginException, UserSearchException {
+        OIMUtil.localInitialize(hostname, port, username, passwd);
+        String userLogins = UserUtil.generateUserLogin("hieund");
+        System.out.println(userLogins);
+    }
 
     @Test
     public void testGetUser() throws UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException, LoginException {
