@@ -35,7 +35,6 @@ import org.identityconnectors.framework.api.operations.*;
 import org.identityconnectors.framework.common.objects.*;
 import vn.bnh.oim.utils.AdapterUtil;
 import vn.bnh.oim.utils.ApplicationInstanceUtil;
-import vn.bnh.oim.utils.OIMUtil;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -78,7 +77,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         this.childTableName = childTableName;
         this.processInstanceKey = processInstanceKey;
         this.dataProvider = dataProvider;
-        OIMUtil.initialize();
     }
 
     public CustomProvisioningAdapter(
@@ -89,7 +87,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
         this.itResourceFieldName = itResourceFieldName;
         this.processInstanceKey = processInstanceKey;
         this.dataProvider = dataProvider;
-        OIMUtil.initialize();
     }
 
     private void init(
@@ -204,7 +201,6 @@ public final class CustomProvisioningAdapter implements ProvisioningManager {
      * @return success code
      */
     public String createObject(String objectType) {
-        OIMUtil.initialize();
         logger.log(ODLLevel.INFO, "Enter Create Object: {0}", objectType);
         LOG.ok("Enter");
         String responseCode = "SUCCESS";

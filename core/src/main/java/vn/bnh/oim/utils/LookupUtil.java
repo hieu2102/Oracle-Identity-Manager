@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 public class LookupUtil {
-    static tcLookupOperationsIntf tcLookupOperationsIntf = OIMUtil.tcLookupOperationsIntf;
+    static tcLookupOperationsIntf tcLookupOperationsIntf = OIMUtil.getService(tcLookupOperationsIntf.class);
     private static final ODLLogger logger = ODLLogger.getODLLogger(LookupUtil.class.getName());
 
     public static void setLookupValue(

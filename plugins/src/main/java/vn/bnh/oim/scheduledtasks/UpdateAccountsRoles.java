@@ -69,7 +69,5 @@ public class UpdateAccountsRoles extends TaskSupport {
         this.PARENT_PROCESS_FORM_ROLE_FIELD = this.scheduledTaskInputParams.get("Parent Process Form's Role Field Name").toString();
         this.PARENT_PROCESS_FORM_ROLE_FIELD_FORMAT = this.scheduledTaskInputParams.get("Role Field's Format").toString();
         this.CHILD_PROCESS_FORM_NAME = this.scheduledTaskInputParams.get("Child Process Form's Name").toString();
-//        initialize OIMUTil
-        OIMUtil.initialize();
     }
 }

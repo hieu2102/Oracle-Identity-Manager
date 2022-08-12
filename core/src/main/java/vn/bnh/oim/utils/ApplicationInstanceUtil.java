@@ -26,11 +26,15 @@ import java.util.stream.Collectors;
 
 public class ApplicationInstanceUtil {
     private static final ODLLogger logger = ODLLogger.getODLLogger(ApplicationInstanceUtil.class.getName());
-    private static final ApplicationInstanceService applicationInstanceService = OIMUtil.applicationInstanceService;
-    private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.provisioningOperationsIntf;
-    private static final ProvisioningService provisioningService = OIMUtil.provisioningService;
+    private static final ApplicationInstanceService applicationInstanceService = OIMUtil.getService(ApplicationInstanceService.class);
+    private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.getService(tcProvisioningOperationsIntf.class);
+    private static final ProvisioningService provisioningService = OIMUtil.getService(ProvisioningService.class);
 
-    public static Set<Account> getAccountsForUser(String userLogin, String appInstanceName, ProvisioningConstants.ObjectStatus accountStatus) throws UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException {
+    public static Set<Account> getAccountsForUser(
+            String userLogin,
+            String appInstanceName,
+            ProvisioningConstants.ObjectStatus accountStatus
+    ) throws UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException {
         String userKey = UserUtil.getUser(userLogin).getId();
         SearchCriteria provisionedCriteria = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_STATUS.getId(), accountStatus.getId(), SearchCriteria.Operator.EQUAL);
         return provisioningService.getAccountsProvisionedToUser(userKey, provisionedCriteria, new HashMap<>(), true).stream().filter(x -> x.getAppInstance().getApplicationInstanceName().equals(appInstanceName)).collect(Collectors.toSet());
@@ -38,7 +42,12 @@ public class ApplicationInstanceUtil {
 //        return null;
     }
 
-    public static Account getAccountForUser(String userKey, String appInstName, String accountStatus, long processInstKey) throws UserNotFoundException, GenericProvisioningException {
+    public static Account getAccountForUser(
+            String userKey,
+            String appInstName,
+            String accountStatus,
+            long processInstKey
+    ) throws UserNotFoundException, GenericProvisioningException {
         SearchCriteria provisionedCriteria = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_STATUS.getId(), accountStatus, SearchCriteria.Operator.EQUAL);
         List<Account> accountList = provisioningService.getAccountsProvisionedToUser(userKey, provisionedCriteria, new HashMap<>(), true);
         if (!accountList.isEmpty()) {
@@ -47,13 +56,19 @@ public class ApplicationInstanceUtil {
         return null;
     }
 
-    public static Set<Account> getProvisioningAccountsForUser(User user, String appInstanceName) throws UserNotFoundException, GenericProvisioningException {
+    public static Set<Account> getProvisioningAccountsForUser(
+            User user,
+            String appInstanceName
+    ) throws UserNotFoundException, GenericProvisioningException {
         String userKey = user.getId();
         SearchCriteria provisionedCriteria = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_STATUS.getId(), ProvisioningConstants.ObjectStatus.PROVISIONING.getId(), SearchCriteria.Operator.EQUAL);
         return provisioningService.getAccountsProvisionedToUser(userKey, provisionedCriteria, new HashMap<>(), true).stream().filter(x -> x.getAppInstance().getApplicationInstanceName().equals(appInstanceName)).collect(Collectors.toSet());
     }
 
-    public static Account updateAccountData(Account account, Map<String, Object> newAccountData) throws GenericProvisioningException, AccountNotFoundException {
+    public static Account updateAccountData(
+            Account account,
+            Map<String, Object> newAccountData
+    ) throws GenericProvisioningException, AccountNotFoundException {
         AccountData updatedAccountData = new AccountData(account.getAccountData().getFormKey(), account.getAccountData().getUdTablePrimaryKey(), newAccountData);
         updatedAccountData.setChildData(account.getAccountData().getChildData());
         Account modifiedAccount = new Account(account.getAccountID(), account.getProcessInstanceKey(), account.getUserKey());
@@ -92,7 +107,11 @@ public class ApplicationInstanceUtil {
         }
     }
 
-    public static void provisionAccount(String userLogin, String appInstName, Map<String, Object> parentData) throws UserLookupException, NoSuchUserException, ApplicationInstanceNotFoundException, GenericAppInstanceServiceException, UserNotFoundException, GenericProvisioningException {
+    public static void provisionAccount(
+            String userLogin,
+            String appInstName,
+            Map<String, Object> parentData
+    ) throws UserLookupException, NoSuchUserException, ApplicationInstanceNotFoundException, GenericAppInstanceServiceException, UserNotFoundException, GenericProvisioningException {
         User user = UserUtil.getUser(userLogin);
         ApplicationInstance appInst = applicationInstanceService.findApplicationInstanceByName(appInstName);
         Long resourceFormKey = appInst.getAccountForm().getFormKey();
@@ -102,7 +121,12 @@ public class ApplicationInstanceUtil {
         provisioningService.provision(user.getId(), resAccount);
     }
 
-    public static void provisionAccount(String userLogin, String appInstName, Map<String, Object> parentData, Map<String, Object> childData) throws UserNotFoundException, ApplicationInstanceNotFoundException, GenericProvisioningException, UserLookupException, NoSuchUserException, GenericAppInstanceServiceException, tcAPIException, tcTaskNotFoundException, tcColumnNotFoundException {
+    public static void provisionAccount(
+            String userLogin,
+            String appInstName,
+            Map<String, Object> parentData,
+            Map<String, Object> childData
+    ) throws UserNotFoundException, ApplicationInstanceNotFoundException, GenericProvisioningException, UserLookupException, NoSuchUserException, GenericAppInstanceServiceException, tcAPIException, tcTaskNotFoundException, tcColumnNotFoundException {
         User user = UserUtil.getUser(userLogin);
         ApplicationInstance appInst = applicationInstanceService.findApplicationInstanceByName(appInstName);
         Long resourceFormKey = appInst.getAccountForm().getFormKey();

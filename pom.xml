@@ -11,7 +11,7 @@
     <modules>
         <module>adapters</module>
         <module>core</module>
-        <module>scheduled-tasks</module>
+        <module>plugins</module>
     </modules>
 
     <properties>

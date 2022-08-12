@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ServerUtil {
-    static PlatformUtilsService platformUtilsService = OIMUtil.platformUtilsService;
+    static PlatformUtilsService platformUtilsService = OIMUtil.getService(PlatformUtilsService.class);
 
     public enum JarType {
         JavaTasks("JavaTasks"), ScheduleTask("ScheduleTask"), ThirdParty("ThirdParty"), ICFBundle("ICFBundle");
@@ -29,7 +29,10 @@ public class ServerUtil {
      * @param jarDir  JAR file directory <u><b>on</b></u> OIM server
      * @param jarType JAR file type (Scheduled Task, Java Task/Adapter, Third-party libs, Connector Bundle)
      */
-    public static void uploadJar(String jarDir, JarType jarType) throws PlatformServiceException {
+    public static void uploadJar(
+            String jarDir,
+            JarType jarType
+    ) throws PlatformServiceException {
         JarElement jarToUpload = new JarElement();
         jarToUpload.setPath(jarDir);
         jarToUpload.setType(jarType.getId());
@@ -38,7 +41,10 @@ public class ServerUtil {
         platformUtilsService.uploadJars(jarSet);
     }
 
-    public static void deleteJar(String jarName, JarType jarType) throws PlatformServiceException {
+    public static void deleteJar(
+            String jarName,
+            JarType jarType
+    ) throws PlatformServiceException {
         JarElement jarToDelete = new JarElement();
         jarToDelete.setType(jarType.getId());
         jarToDelete.setName(jarName);
@@ -47,7 +53,11 @@ public class ServerUtil {
         platformUtilsService.deleteJars(jarSet);
     }
 
-    public static void updateJar(String jarDir, String jarName, JarType jarType) {
+    public static void updateJar(
+            String jarDir,
+            String jarName,
+            JarType jarType
+    ) {
         JarElement jarToUpload = new JarElement();
         jarToUpload.setPath(jarDir);
         jarToUpload.setName(jarName);
