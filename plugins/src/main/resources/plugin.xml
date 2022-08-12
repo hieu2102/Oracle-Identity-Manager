@@ -3,4 +3,7 @@
     <plugins pluginpoint="oracle.iam.scheduler.vo.TaskSupport">
         <plugin pluginclass="vn.bnh.oim.scheduledtasks.UpdateAccountsRoles" version="1.0" name="UpdateAccountsRoles"/>
     </plugins>
+    <plugins pluginpoint="oracle.iam.identity.usermgmt.api.UserNamePolicy">
+        <plugin pluginclass="vn.bnh.oim.policy.UsernameGenerationPolicy" version="1.0" name="UsernameGenerationPolicy"/>
+    </plugins>
 </oimplugins>

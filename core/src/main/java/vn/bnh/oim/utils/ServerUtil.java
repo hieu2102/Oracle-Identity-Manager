@@ -1,14 +1,22 @@
 package vn.bnh.oim.utils;
 
+import oracle.iam.platformservice.api.PlatformService;
 import oracle.iam.platformservice.api.PlatformUtilsService;
 import oracle.iam.platformservice.exception.PlatformServiceException;
 import oracle.iam.platformservice.vo.JarElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 public class ServerUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerUtil.class);
     static PlatformUtilsService platformUtilsService = OIMUtil.getService(PlatformUtilsService.class);
+    static PlatformService platformService = OIMUtil.getService(PlatformService.class);
 
     public enum JarType {
         JavaTasks("JavaTasks"), ScheduleTask("ScheduleTask"), ThirdParty("ThirdParty"), ICFBundle("ICFBundle");
@@ -66,5 +74,25 @@ public class ServerUtil {
         jarSet.add(jarToUpload);
         platformUtilsService.updateJars(jarSet);
 
+    }
+
+    public static void registerPlugin(String pluginFilePath) {
+        File zipFile = new File(pluginFilePath);
+        FileInputStream fis;
+        try {
+            fis = new FileInputStream(zipFile);
+            int size = (int) zipFile.length();
+            byte[] b = new byte[size];
+            int bytesRead = fis.read(b, 0, size);
+            while (bytesRead < size) {
+                bytesRead += fis.read(b, bytesRead, size - bytesRead);
+            }
+            fis.close();
+            platformService.registerPluginAndReturnStatus(b).forEach((k, v) -> {
+                LOGGER.info("Register plugin {} result: {}", k, Arrays.asList(v));
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
