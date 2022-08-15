@@ -4,6 +4,8 @@ import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
 import Thor.API.Exceptions.tcInvalidLookupException;
 import Thor.API.Exceptions.tcInvalidValueException;
+import oracle.core.ojdl.logging.ODLLevel;
+import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.reconciliation.api.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -15,7 +17,41 @@ import java.util.Map;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ReconciliationUtil {
+    private static final ODLLogger logger = ODLLogger.getODLLogger(ReconciliationUtil.class.getName());
     private static final ReconOperationsService reconOperationsService = OIMUtil.getService(ReconOperationsService.class);
+    private static final EventMgmtService eventMgmtService = OIMUtil.getService(EventMgmtService.class);
+
+    public static ReconSearchCriteria generateSearchCriteria(
+            String resourceObjName,
+            String eventStatus
+    ) {
+        Calendar date = new GregorianCalendar();
+        date.set(Calendar.HOUR_OF_DAY, 0);
+        date.set(Calendar.MINUTE, 0);
+        date.set(Calendar.SECOND, 0);
+        date.set(Calendar.MILLISECOND, 0);
+        ReconSearchCriteria sc = new ReconSearchCriteria(ReconSearchCriteria.Operator.AND);
+        sc.addExpression(EventConstants.RECON_EVENT_RSRC_NAME, resourceObjName, ReconSearchCriteria.Operator.EQUAL);
+        sc.addExpression(EventConstants.RECON_EVENT_STATUS, eventStatus, ReconSearchCriteria.Operator.EQUAL);
+        sc.addExpression(EventConstants.RECON_EVENT_CREATETIMESTMP, date.getTime(), ReconSearchCriteria.Operator.GREATER_THAN);
+        return sc;
+    }
+
+    public static Set<Account> getReconciliationEvents(String resourceObjName) {
+        logger.log(ODLLevel.INFO, "Get Reconciliation Events for {0}", resourceObjName);
+        Vector resultOrder = new Vector<>();
+        resultOrder.add(EventConstants.RECON_EVENT_KEY);
+        ReconSearchCriteria searchCreated = generateSearchCriteria(resourceObjName, EventConstants.STATUS_CREATE_SUCCESS);
+        List<ReconEvent> createdEvents = eventMgmtService.search(searchCreated, resultOrder, false, 0, 100);
+        logger.log(ODLLevel.INFO, "Reconciliation CREATE Events: {0}", createdEvents.size());
+        ReconSearchCriteria searchUpdated = generateSearchCriteria(resourceObjName, EventConstants.STATUS_UPDATE_SUCCESS);
+        List<ReconEvent> updatedEvents = eventMgmtService.search(searchUpdated, resultOrder, false, 0, 100);
+        logger.log(ODLLevel.INFO, "Reconciliation UPDATE Events: {0}", updatedEvents.size());
+
+//        merge list
+        createdEvents.addAll(updatedEvents);
+        return createdEvents.stream().map(event -> eventMgmtService.getLinkedAccountForEvent(event.getReKey())).collect(Collectors.toSet());
+    }
 
     public static void reconcileRoles(
             String lookupTableName,

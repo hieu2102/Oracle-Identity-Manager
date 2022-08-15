@@ -56,6 +56,19 @@ public class ApplicationInstanceUtil {
         return null;
     }
 
+    public static ApplicationInstance getApplicationInstance(String resourceObjName) throws GenericAppInstanceServiceException {
+//        SearchCriteria sc = new SearchCriteria(ApplicationInstance., resourceObjName, SearchCriteria.Operator.EQUAL);
+//        return applicationInstanceService.findApplicationInstance(sc, new HashMap<>()).get(0);
+        return null;
+    }
+
+    public static Account getUserPrimaryAccount(
+            String userID,
+            String appInstName
+    ) throws UserNotFoundException, GenericProvisioningException {
+        return provisioningService.getAccountsProvisionedToUser(userID, true).stream().filter(account -> account.getAccountType().equals(Account.ACCOUNT_TYPE.Primary) && account.getAppInstance().getApplicationInstanceName().equals(appInstName)).collect(Collectors.toList()).get(0);
+    }
+
     public static Set<Account> getProvisioningAccountsForUser(
             User user,
             String appInstanceName
