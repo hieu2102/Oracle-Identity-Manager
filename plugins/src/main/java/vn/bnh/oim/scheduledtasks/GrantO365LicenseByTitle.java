@@ -28,35 +28,31 @@ public class GrantO365LicenseByTitle extends TaskSupport {
     private static final String childFormName = "UD_O365_LIC";
     private static final String childFieldName = "UD_O365_LIC_LICENSE_NAME";
 
-    @Override
-    public void execute(HashMap hashMap) throws Exception {
-        this.taskParams = hashMap;
-        setAttributes();
+    private Set<User> getOIMUsersWithReconciledAccounts() {
         Set<Account> reconciledAccounts = ReconciliationUtil.getReconciliationEvents(this.resourceObjName);
         logger.log(ODLLevel.INFO, "Reconciled Account List: {0}", reconciledAccounts.size());
-        Set<User> oimUsers = reconciledAccounts.stream().map(x -> {
+        return reconciledAccounts.stream().map(x -> {
             try {
                 return UserUtil.getUser(x.getOwnerName());
             } catch (UserLookupException | NoSuchUserException e) {
                 throw new RuntimeException(e);
             }
         }).collect(Collectors.toSet());
+    }
+
+    @Override
+    public void execute(HashMap hashMap) throws Exception {
+        this.taskParams = hashMap;
+        setAttributes();
+        Set<User> oimUsers = getOIMUsersWithReconciledAccounts();
         for (User user : oimUsers) {
             String title = user.getAttribute("Title").toString();
             String licenseToAdd = LookupUtil.getLookupValue(this.titleToLicenseLookupTable, title);
             logger.log(ODLLevel.INFO, "Grant License {0} to User {1} with Title {2}", new Object[]{licenseToAdd, user.getLogin(), title});
             oracle.iam.provisioning.vo.Account o365Account = ApplicationInstanceUtil.getUserPrimaryAccount(user.getId(), this.appInstName);
             ArrayList<ChildTableRecord> grantedLicenses = o365Account.getAccountData().getChildData().get(childFormName);
-            boolean hasLicense = false;
-            for (ChildTableRecord license : grantedLicenses) {
-                Map<String, Object> data = license.getChildData();
-                if (data.get(childFieldName).toString().equalsIgnoreCase(licenseToAdd)) {
-                    logger.log(ODLLevel.INFO, "User {0} already granted license {1}", new Object[]{user.getLogin(), licenseToAdd});
-                    hasLicense = true;
-                }
-            }
-            if (!hasLicense) {
-                logger.log(ODLLevel.INFO, "Executing Grant License {0} to User {1}", new Object[]{licenseToAdd, user.getLogin()});
+            int userIsAlreadyGrantedLicense = (int) grantedLicenses.stream().filter(x -> x.getChildData().get(childFieldName).toString().equalsIgnoreCase(licenseToAdd)).count();
+            if (userIsAlreadyGrantedLicense == 0) {
                 ChildTableRecord newLicense = new ChildTableRecord();
                 newLicense.setAction(ChildTableRecord.ACTION.Add);
                 Map<String, Object> childData = new HashMap<>();
@@ -64,6 +60,10 @@ public class GrantO365LicenseByTitle extends TaskSupport {
                 newLicense.setChildData(childData);
                 grantedLicenses.add(newLicense);
                 ApplicationInstanceUtil.modifyAccount(o365Account);
+                logger.log(ODLLevel.INFO, "User {0} granted License {1}", new Object[]{user.getLogin(), licenseToAdd});
+            } else {
+                logger.log(ODLLevel.INFO, "User {0} is already granted License {1}", new Object[]{user.getLogin(), licenseToAdd});
+
             }
         }
     }
