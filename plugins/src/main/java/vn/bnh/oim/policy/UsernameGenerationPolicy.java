@@ -5,7 +5,7 @@ import oracle.iam.identity.exception.UserSearchException;
 import oracle.iam.identity.usermgmt.api.AbstractUserNameGenerationPolicy;
 import oracle.iam.identity.usermgmt.api.UserNameGenerationPolicy;
 import vn.bnh.oim.utils.UserUtil;
-import oracle.iam.identity.usermgmt.api.UserNamePolicy;
+
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;

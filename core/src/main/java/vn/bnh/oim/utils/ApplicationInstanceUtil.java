@@ -16,10 +16,7 @@ import oracle.iam.provisioning.api.ApplicationInstanceService;
 import oracle.iam.provisioning.api.ProvisioningConstants;
 import oracle.iam.provisioning.api.ProvisioningService;
 import oracle.iam.provisioning.exception.*;
-import oracle.iam.provisioning.vo.Account;
-import oracle.iam.provisioning.vo.AccountData;
-import oracle.iam.provisioning.vo.ApplicationInstance;
-import oracle.iam.provisioning.vo.ChildTableRecord;
+import oracle.iam.provisioning.vo.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +26,11 @@ public class ApplicationInstanceUtil {
     private static final ApplicationInstanceService applicationInstanceService = OIMUtil.getService(ApplicationInstanceService.class);
     private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.getService(tcProvisioningOperationsIntf.class);
     private static final ProvisioningService provisioningService = OIMUtil.getService(ProvisioningService.class);
+
+
+    public static Account getAccount(long id) throws GenericProvisioningException, AccountNotFoundException {
+        return provisioningService.getAccountDetails(id);
+    }
 
     public static Set<Account> getAccountsForUser(
             String userLogin,
@@ -54,6 +56,21 @@ public class ApplicationInstanceUtil {
             return accountList.stream().filter(account -> account.getAppInstance().getApplicationInstanceName().equals(appInstName)).filter(account -> account.getProcessInstanceKey().equals(String.valueOf(processInstKey))).collect(Collectors.toList()).get(0);
         }
         return null;
+    }
+
+    public static ApplicationInstance getApplicationInstance(String resourceObjName) throws GenericAppInstanceServiceException {
+        SearchCriteria sc = new SearchCriteria(ApplicationInstance., resourceObjName, SearchCriteria.Operator.EQUAL);
+        return applicationInstanceService.findApplicationInstance(sc, new HashMap<>()).get(0);
+    }
+
+    public static Account getUserPrimaryAccount(
+            String userID,
+            String appInstName
+    ) throws UserNotFoundException, GenericProvisioningException {
+        SearchCriteria appSC = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.APPINST_NAME, appInstName, SearchCriteria.Operator.EQUAL);
+        SearchCriteria typeSC = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_TYPE, "Primary", SearchCriteria.Operator.EQUAL);
+        SearchCriteria mergedSC = new SearchCriteria(typeSC, appSC, SearchCriteria.Operator.AND);
+        return provisioningService.getAccountsProvisionedToUser(userID, mergedSC, new HashMap<>(), true).get(0);
     }
 
     public static Set<Account> getProvisioningAccountsForUser(
