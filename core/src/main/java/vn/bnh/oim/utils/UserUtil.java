@@ -23,7 +23,9 @@ public class UserUtil {
         List<User> users = userService.search(sc, new HashSet<>(), null);
         List<String> userLoginsList = users.stream().map(User::getLogin).collect(Collectors.toList());
         String userLoginWithNumber = prefix.concat("\\d+");
-        int userWithPrefixCount = userLoginsList.stream().filter(x -> x.equalsIgnoreCase(prefix) || x.matches(userLoginWithNumber)).collect(Collectors.toList()).size();
-        return prefix + userWithPrefixCount;
+        List<String> userWithPrefix = userLoginsList.stream().filter(x -> x.equalsIgnoreCase(prefix) || x.matches(userLoginWithNumber)).collect(Collectors.toList());
+        int userWithPrefixCount = userWithPrefix.size();
+        System.out.printf("[%s] User Login matches Prefix: %s, %s", UserUtil.class.getName(), userWithPrefix, userWithPrefixCount);
+        return userWithPrefixCount == 0 ? prefix : prefix + userWithPrefixCount;
     }
 }

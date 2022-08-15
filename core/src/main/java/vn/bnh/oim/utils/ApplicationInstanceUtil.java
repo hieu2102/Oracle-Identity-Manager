@@ -56,10 +56,10 @@ public class ApplicationInstanceUtil {
         return null;
     }
 
-    public static ApplicationInstance getApplicationInstance(String resourceObjName) throws GenericAppInstanceServiceException {
-//        SearchCriteria sc = new SearchCriteria(ApplicationInstance., resourceObjName, SearchCriteria.Operator.EQUAL);
-//        return applicationInstanceService.findApplicationInstance(sc, new HashMap<>()).get(0);
-        return null;
+    public static ApplicationInstance getApplicationInstance(String appInstName) throws GenericAppInstanceServiceException {
+        SearchCriteria sc = new SearchCriteria(ApplicationInstance.APPINST_NAME, appInstName, SearchCriteria.Operator.EQUAL);
+        return applicationInstanceService.findApplicationInstance(sc, new HashMap<>()).get(0);
+//        return null;
     }
 
     public static Account getUserPrimaryAccount(
@@ -87,8 +87,13 @@ public class ApplicationInstanceUtil {
         Account modifiedAccount = new Account(account.getAccountID(), account.getProcessInstanceKey(), account.getUserKey());
         modifiedAccount.setAccountData(updatedAccountData);
         modifiedAccount.setAppInstance(account.getAppInstance());
-        provisioningService.modify(modifiedAccount);
+        modifyAccount(modifiedAccount);
         return modifiedAccount;
+    }
+
+    public static void modifyAccount(Account updatedAccount) throws GenericProvisioningException, AccountNotFoundException {
+        provisioningService.modify(updatedAccount);
+
     }
 
     public static Set<Account> getProvisioningAccount(String appInstName) throws tcAPIException, UserNotFoundException, GenericProvisioningException, tcColumnNotFoundException, UserLookupException, NoSuchUserException {

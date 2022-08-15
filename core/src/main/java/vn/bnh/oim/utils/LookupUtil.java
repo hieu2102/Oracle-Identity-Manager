@@ -36,17 +36,7 @@ public class LookupUtil {
             String lookupTable,
             String meaning
     ) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException, tcInvalidValueException {
-        tcResultSet lookupCodeSet = getLookupValues(lookupTable);
-        String lookupCode = null;
-        if (lookupCodeSet.getTotalRowCount() > 0) {
-            for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
-                lookupCodeSet.goToRow(i);
-                if (meaning.equals(lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode"))) {
-                    lookupCode = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
-                    break;
-                }
-            }
-        }
+        String lookupCode = getLookupCode(lookupTable, meaning);
         removeLookupEntryByKey(lookupTable, lookupCode);
     }
 
@@ -89,6 +79,20 @@ public class LookupUtil {
             }
 
         }
+    }
+
+    public static String getLookupCode(String lookupTable, String meaning) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException {
+        tcResultSet lookupCodeSet = getLookupValues(lookupTable);
+        if (lookupCodeSet.getTotalRowCount() > 0) {
+            for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
+                lookupCodeSet.goToRow(i);
+                logger.log(ODLLevel.INFO, "Lookup Entry: {0}", lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode"));
+                if (meaning.equals(lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode"))) {
+                    return lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
+                }
+            }
+        }
+        return null;
     }
 
     public static String getLookupValue(

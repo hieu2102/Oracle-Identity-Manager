@@ -7,13 +7,15 @@ import Thor.API.Exceptions.tcInvalidValueException;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.reconciliation.api.*;
+import oracle.iam.reconciliation.vo.Account;
+import oracle.iam.reconciliation.vo.EventConstants;
+import oracle.iam.reconciliation.vo.ReconEvent;
+import oracle.iam.reconciliation.vo.ReconSearchCriteria;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ReconciliationUtil {
@@ -34,6 +36,7 @@ public class ReconciliationUtil {
         sc.addExpression(EventConstants.RECON_EVENT_RSRC_NAME, resourceObjName, ReconSearchCriteria.Operator.EQUAL);
         sc.addExpression(EventConstants.RECON_EVENT_STATUS, eventStatus, ReconSearchCriteria.Operator.EQUAL);
         sc.addExpression(EventConstants.RECON_EVENT_CREATETIMESTMP, date.getTime(), ReconSearchCriteria.Operator.GREATER_THAN);
+        logger.log(ODLLevel.INFO, "Generate Search Criteria for {0}, event status: {1}, time: {2}", new Object[]{resourceObjName, eventStatus, date.getTime()});
         return sc;
     }
 
