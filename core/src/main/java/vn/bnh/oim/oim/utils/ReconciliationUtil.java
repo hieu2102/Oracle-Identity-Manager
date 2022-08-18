@@ -1,4 +1,4 @@
-package vn.bnh.oim.utils;
+package vn.bnh.oim.oim.utils;
 
 import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
@@ -14,6 +14,8 @@ import oracle.iam.reconciliation.vo.ReconEvent;
 import oracle.iam.reconciliation.vo.ReconSearchCriteria;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import vn.bnh.oim.utils.LookupUtil;
+import vn.bnh.oim.utils.OIMUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;

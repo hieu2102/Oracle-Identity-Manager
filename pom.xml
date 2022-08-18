@@ -9,9 +9,7 @@
     <version>1.0</version>
     <packaging>pom</packaging>
     <modules>
-        <module>adapters</module>
         <module>core</module>
-        <module>plugins</module>
     </modules>
 
     <properties>

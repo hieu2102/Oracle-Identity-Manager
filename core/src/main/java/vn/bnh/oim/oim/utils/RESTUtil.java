@@ -1,4 +1,4 @@
-package vn.bnh.oim.utils;
+package vn.bnh.oim.oim.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

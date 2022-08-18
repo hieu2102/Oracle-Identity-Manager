@@ -1,12 +1,12 @@
 package vn.bnh.oim.utils;
 
+import vn.bnh.oim.adapters.CustomProvisioningAdapter;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.connectors.icfcommon.FieldMapping;
 import oracle.iam.provisioning.vo.ApplicationInstance;
 import oracle.iam.provisioning.vo.ChildTableRecord;
 import org.identityconnectors.framework.common.objects.*;
-import vn.bnh.oim.adapters.CustomProvisioningAdapter;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;

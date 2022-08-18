@@ -1,4 +1,4 @@
-package vn.bnh.oim.scheduledtasks;
+package vn.bnh.oim.oim.scheduledtasks;
 
 import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
@@ -11,7 +11,6 @@ import oracle.iam.provisioning.vo.Account;
 import oracle.iam.provisioning.vo.ChildTableRecord;
 import oracle.iam.scheduler.vo.TaskSupport;
 import vn.bnh.oim.utils.ApplicationInstanceUtil;
-import vn.bnh.oim.utils.OIMUtil;
 
 import java.util.*;
 

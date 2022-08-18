@@ -1,4 +1,4 @@
-package vn.bnh.oim.policy;
+package vn.bnh.oim.oim.policy;
 
 import oracle.iam.identity.exception.UserNameGenerationException;
 import oracle.iam.identity.exception.UserSearchException;
