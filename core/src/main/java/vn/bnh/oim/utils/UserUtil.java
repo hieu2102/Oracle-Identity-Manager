@@ -21,9 +21,8 @@ public class UserUtil {
     public static String generateUserLogin(String prefix) throws UserSearchException {
         SearchCriteria sc = new SearchCriteria("User Login", prefix, SearchCriteria.Operator.BEGINS_WITH);
         List<User> users = userService.search(sc, new HashSet<>(), null);
-        List<String> userLoginsList = users.stream().map(User::getLogin).collect(Collectors.toList());
         String userLoginWithNumber = prefix.concat("\\d+");
-        List<String> userWithPrefix = userLoginsList.stream().filter(x -> x.equalsIgnoreCase(prefix) || x.matches(userLoginWithNumber)).collect(Collectors.toList());
+        List<String> userWithPrefix = users.stream().map(User::getLogin).filter(x -> x.equalsIgnoreCase(prefix) || x.matches(userLoginWithNumber)).collect(Collectors.toList());
         int userWithPrefixCount = userWithPrefix.size();
         System.out.printf("[%s] User Login matches Prefix: %s, %s", UserUtil.class.getName(), userWithPrefix, userWithPrefixCount);
         return userWithPrefixCount == 0 ? prefix : prefix + userWithPrefixCount;

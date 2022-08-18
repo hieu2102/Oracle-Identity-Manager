@@ -22,7 +22,8 @@
             <groupId>vn.bnh</groupId>
             <artifactId>core</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
+
     </dependencies>
 </project>
