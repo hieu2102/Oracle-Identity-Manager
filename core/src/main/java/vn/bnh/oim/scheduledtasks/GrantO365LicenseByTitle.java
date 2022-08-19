@@ -1,4 +1,4 @@
-package vn.bnh.oim.oim.scheduledtasks;
+package vn.bnh.oim.scheduledtasks;
 
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
@@ -10,7 +10,7 @@ import oracle.iam.reconciliation.vo.Account;
 import oracle.iam.scheduler.vo.TaskSupport;
 import vn.bnh.oim.utils.ApplicationInstanceUtil;
 import vn.bnh.oim.utils.LookupUtil;
-import vn.bnh.oim.oim.utils.ReconciliationUtil;
+import vn.bnh.oim.utils.ReconciliationUtil;
 import vn.bnh.oim.utils.UserUtil;
 
 import java.util.ArrayList;

@@ -2,7 +2,7 @@
 <scheduledTasks xmlns="http://xmlns.oracle.com/oim/scheduler">
     <task>
         <name>Update Accounts Roles</name>
-        <class>vn.bnh.oim.oim.scheduledtasks.UpdateAccountsRoles</class>
+        <class>vn.bnh.oim.scheduledtasks.GrantO365LicenseByTitle</class>
         <description>Update "Role" Field in Parent Process Form and Retry Provisioning Task</description>
         <retry>2</retry>
         <parameters>

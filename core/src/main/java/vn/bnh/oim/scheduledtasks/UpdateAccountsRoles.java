@@ -1,4 +1,4 @@
-package vn.bnh.oim.oim.scheduledtasks;
+package vn.bnh.oim.scheduledtasks;
 
 import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;

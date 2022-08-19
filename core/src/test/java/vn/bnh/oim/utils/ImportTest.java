@@ -33,6 +33,11 @@ public class ImportTest {
     }
 
     @Test
+    public void register() throws LoginException {
+        OIMUtil.localInitialize(hostname,port,username,passwd);
+        ServerUtil.registerPlugin("/Users/hieunguyen/work/code/java/OIM/ABB/core/deploy/lib.zip");
+    }
+    @Test
     public void updateJar() throws LoginException {
         OIMUtil.localInitialize(hostname, port, username, passwd);
         ServerUtil.updateJar(jarDir, jarName, ServerUtil.JarType.JavaTasks);

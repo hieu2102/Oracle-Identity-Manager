@@ -1,9 +1,5 @@
-package vn.bnh.oim.oim.utils;
+package vn.bnh.oim.utils;
 
-import Thor.API.Exceptions.tcAPIException;
-import Thor.API.Exceptions.tcColumnNotFoundException;
-import Thor.API.Exceptions.tcInvalidLookupException;
-import Thor.API.Exceptions.tcInvalidValueException;
 import com.fasterxml.jackson.databind.JsonNode;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
@@ -12,10 +8,6 @@ import oracle.iam.reconciliation.vo.Account;
 import oracle.iam.reconciliation.vo.EventConstants;
 import oracle.iam.reconciliation.vo.ReconEvent;
 import oracle.iam.reconciliation.vo.ReconSearchCriteria;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import vn.bnh.oim.utils.LookupUtil;
-import vn.bnh.oim.utils.OIMUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -59,30 +51,6 @@ public class ReconciliationUtil {
         return createdEvents.stream().map(event -> eventMgmtService.getLinkedAccountForEvent(event.getReKey())).collect(Collectors.toSet());
     }
 
-    public static void reconcileRoles(
-            String lookupTableName,
-            JSONObject inputData,
-            String jsonResourceTag,
-            String displayNameField
-    ) throws tcInvalidLookupException, tcInvalidValueException, tcAPIException, tcColumnNotFoundException {
-        JSONArray payload = inputData.getJSONArray(jsonResourceTag);
-        HashMap<String, String> reconData = new HashMap<>();
-        for (int i = 0; i < payload.length(); i++) {
-            JSONObject roleData = payload.getJSONObject(i);
-            String key = null;
-            String value = null;
-            for (String fieldName : roleData.keySet()) {
-                if (fieldName.equals(displayNameField)) {
-                    value = roleData.getString(fieldName);
-                } else {
-                    key = roleData.getString(fieldName);
-                }
-            }
-            reconData.put(key, value);
-        }
-        LookupUtil.updateLookupTable(lookupTableName, reconData);
-    }
-
     public static void reconcileAccount(String resourceObjName, JsonNode accountData) {
         EventAttributes attrs = new EventAttributes();
         Map<String, Object> reconData = new HashMap<>();
@@ -109,42 +77,4 @@ public class ReconciliationUtil {
         return reconOperationsService.createReconciliationEvents(batchAttributes, input);
     }
 
-    public static ReconciliationResult batchReconcileAccount(
-            String resourceObjName,
-            JSONObject inputData,
-            String jsonResourceTag,
-            String childFieldName
-    ) {
-        JSONArray payload = inputData.getJSONArray(jsonResourceTag);
-
-        InputData[] input = new InputData[payload.length()];
-        for (int i = 0; i < input.length; i++) {
-            JSONObject accountData = payload.getJSONObject(i);
-            JSONArray childDatas = accountData.getJSONArray(childFieldName);
-            HashMap reconData = new HashMap();
-            accountData.keySet().forEach(fieldName -> {
-                if (!fieldName.equals(childFieldName)) {
-                    reconData.put(fieldName, accountData.get(fieldName));
-                }
-            });
-            List childFormRows = new ArrayList();
-            Map childFormsReconData = new HashMap();
-            childFormsReconData.put(childFieldName, childFormRows);
-            for (int j = 0; j < childDatas.length(); j++) {
-                Map row = new HashMap();
-                JSONObject childData = childDatas.getJSONObject(j);
-                childData.keySet().forEach(x -> {
-                    row.put(x, childData.get(x));
-                });
-                childFormRows.add(row);
-            }
-            input[i] = new InputData(reconData, childFormsReconData, true, ChangeType.CHANGELOG, null);
-        }
-        BatchAttributes batchAttributes = new BatchAttributes(resourceObjName, "yyyy/MM/dd hh:mm:ss z");
-        return reconOperationsService.createReconciliationEvents(batchAttributes, input);
-    }
-
-    public static void getReconciliationProfile() {
-
-    }
 }

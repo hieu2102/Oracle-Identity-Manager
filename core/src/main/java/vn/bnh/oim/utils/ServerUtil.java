@@ -94,5 +94,6 @@ public class ServerUtil {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.out.println("plugin registered");
     }
 }
