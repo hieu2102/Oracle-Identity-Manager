@@ -9,9 +9,8 @@ import oracle.iam.provisioning.vo.Account;
 import org.junit.Test;
 
 import javax.security.auth.login.LoginException;
-import java.util.List;
 
-public class ApplicationInstanceUtilTest {
+public class ApplicationInstanceUtilsTest {
 
     String hostname = "10.10.11.54";
     String port = "14000";
@@ -20,10 +19,11 @@ public class ApplicationInstanceUtilTest {
 
     @Test
     public void getPrimaryAccount() throws LoginException, UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException {
-        OIMUtil.localInitialize(hostname, port, username, password);
-        User user = UserUtil.getUser("uyennt@bnh.vn");
-        Account account = ApplicationInstanceUtil.getUserPrimaryAccount(user.getId(), "O365AppIns");
+        OIMUtils.localInitialize(hostname, port, username, password);
+        User user = UserUtils.getUserByUserLogin("LYLTT");
+        Account account = ApplicationInstanceUtils.getUserPrimaryAccount(user.getId(), "SmartForm");
         System.out.println(account);
+
     }
 
 }

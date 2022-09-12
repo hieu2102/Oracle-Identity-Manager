@@ -24,18 +24,18 @@ import oracle.iam.provisioning.vo.ChildTableRecord;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ApplicationInstanceUtil {
-    private static final ODLLogger logger = ODLLogger.getODLLogger(ApplicationInstanceUtil.class.getName());
-    private static final ApplicationInstanceService applicationInstanceService = OIMUtil.getService(ApplicationInstanceService.class);
-    private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtil.getService(tcProvisioningOperationsIntf.class);
-    private static final ProvisioningService provisioningService = OIMUtil.getService(ProvisioningService.class);
+public class ApplicationInstanceUtils {
+    private static final ODLLogger logger = ODLLogger.getODLLogger(ApplicationInstanceUtils.class.getName());
+    private static final ApplicationInstanceService applicationInstanceService = OIMUtils.getService(ApplicationInstanceService.class);
+    private static final tcProvisioningOperationsIntf provisioningOperationsIntf = OIMUtils.getService(tcProvisioningOperationsIntf.class);
+    private static final ProvisioningService provisioningService = OIMUtils.getService(ProvisioningService.class);
 
     public static Set<Account> getAccountsForUser(
             String userLogin,
             String appInstanceName,
             ProvisioningConstants.ObjectStatus accountStatus
     ) throws UserLookupException, NoSuchUserException, UserNotFoundException, GenericProvisioningException {
-        String userKey = UserUtil.getUser(userLogin).getId();
+        String userKey = UserUtils.getUserByUserLogin(userLogin).getId();
         SearchCriteria provisionedCriteria = new SearchCriteria(ProvisioningConstants.AccountSearchAttribute.ACCOUNT_STATUS.getId(), accountStatus.getId(), SearchCriteria.Operator.EQUAL);
         return provisioningService.getAccountsProvisionedToUser(userKey, provisionedCriteria, new HashMap<>(), true).stream().filter(x -> x.getAppInstance().getApplicationInstanceName().equals(appInstanceName)).collect(Collectors.toSet());
 
@@ -105,7 +105,7 @@ public class ApplicationInstanceUtil {
         logger.log(ODLLevel.INFO, "{0} accounts with state PROVISIONING: {1}", new Object[]{appInstName, results.getTotalRowCount()});
         for (int i = 0; i < results.getTotalRowCount(); i++) {
             results.goToRow(i);
-            User beneficiary = UserUtil.getUser(results.getStringValue("Process Instance.Task Information.Target User"));
+            User beneficiary = UserUtils.getUserByUserLogin(results.getStringValue("Process Instance.Task Information.Target User"));
             output.addAll(getProvisioningAccountsForUser(beneficiary, appInstName));
         }
         return output;
@@ -130,7 +130,7 @@ public class ApplicationInstanceUtil {
             String appInstName,
             Map<String, Object> parentData
     ) throws UserLookupException, NoSuchUserException, ApplicationInstanceNotFoundException, GenericAppInstanceServiceException, UserNotFoundException, GenericProvisioningException {
-        User user = UserUtil.getUser(userLogin);
+        User user = UserUtils.getUserByUserLogin(userLogin);
         ApplicationInstance appInst = applicationInstanceService.findApplicationInstanceByName(appInstName);
         Long resourceFormKey = appInst.getAccountForm().getFormKey();
         String udTablePrimaryKey = null;
@@ -145,7 +145,7 @@ public class ApplicationInstanceUtil {
             Map<String, Object> parentData,
             Map<String, Object> childData
     ) throws UserNotFoundException, ApplicationInstanceNotFoundException, GenericProvisioningException, UserLookupException, NoSuchUserException, GenericAppInstanceServiceException, tcAPIException, tcTaskNotFoundException, tcColumnNotFoundException {
-        User user = UserUtil.getUser(userLogin);
+        User user = UserUtils.getUserByUserLogin(userLogin);
         ApplicationInstance appInst = applicationInstanceService.findApplicationInstanceByName(appInstName);
         Long resourceFormKey = appInst.getAccountForm().getFormKey();
         String udTablePrimaryKey = null;
@@ -159,7 +159,7 @@ public class ApplicationInstanceUtil {
         accountData.setChildData(childTableMap);
         Account resAccount = new Account(appInst, accountData);
         provisioningService.provision(user.getId(), resAccount);
-        ApplicationInstanceUtil.retryAccountProvision(resAccount);
+        ApplicationInstanceUtils.retryAccountProvision(resAccount);
 
     }
 

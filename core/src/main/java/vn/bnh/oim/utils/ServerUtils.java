@@ -2,6 +2,7 @@ package vn.bnh.oim.utils;
 
 import oracle.iam.platformservice.api.PlatformService;
 import oracle.iam.platformservice.api.PlatformUtilsService;
+import oracle.iam.platformservice.exception.InvalidCacheCategoryException;
 import oracle.iam.platformservice.exception.PlatformServiceException;
 import oracle.iam.platformservice.vo.JarElement;
 import org.slf4j.Logger;
@@ -13,10 +14,14 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ServerUtil {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerUtil.class);
-    static PlatformUtilsService platformUtilsService = OIMUtil.getService(PlatformUtilsService.class);
-    static PlatformService platformService = OIMUtil.getService(PlatformService.class);
+public class ServerUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerUtils.class);
+    static PlatformUtilsService platformUtilsService = OIMUtils.getService(PlatformUtilsService.class);
+    static PlatformService platformService = OIMUtils.getService(PlatformService.class);
+
+    public static void purgeCache() throws InvalidCacheCategoryException {
+        platformUtilsService.purgeCache("All");
+    }
 
     public enum JarType {
         JavaTasks("JavaTasks"), ScheduleTask("ScheduleTask"), ThirdParty("ThirdParty"), ICFBundle("ICFBundle");

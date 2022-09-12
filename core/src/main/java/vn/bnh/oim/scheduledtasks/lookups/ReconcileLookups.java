@@ -1,4 +1,4 @@
-package vn.bnh.oim.scheduledtasks;
+package vn.bnh.oim.scheduledtasks.lookups;
 
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.scheduler.vo.TaskSupport;

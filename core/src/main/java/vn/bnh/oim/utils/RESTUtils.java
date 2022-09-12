@@ -13,9 +13,9 @@ import oracle.core.ojdl.logging.ODLLogger;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 
-public class RESTUtil {
+public class RESTUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final ODLLogger logger = ODLLogger.getODLLogger(RESTUtil.class.getName());
+    private static final ODLLogger logger = ODLLogger.getODLLogger(RESTUtils.class.getName());
     private static final String FROM_ID = "IDM";
     private static final String FROM_NAME = "IDM";
     private static final SimpleDateFormat ID_FORMAT = new SimpleDateFormat("yyyyMMddHH24mmss");

@@ -4,7 +4,7 @@ import oracle.iam.identity.exception.UserNameGenerationException;
 import oracle.iam.identity.exception.UserSearchException;
 import oracle.iam.identity.usermgmt.api.AbstractUserNameGenerationPolicy;
 import oracle.iam.identity.usermgmt.api.UserNameGenerationPolicy;
-import vn.bnh.oim.utils.UserUtil;
+import vn.bnh.oim.utils.UserUtils;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -14,7 +14,7 @@ public class UsernameGenerationPolicy extends AbstractUserNameGenerationPolicy i
     @Override
     public String getUserName(Map<String, Object> map) throws UserNameGenerationException {
         try {
-            return UserUtil.generateUserLogin(generatePrefix(map));
+            return UserUtils.generateUserLogin(generatePrefix(map));
         } catch (UserSearchException e) {
             throw new RuntimeException(e);
         }

@@ -38,3 +38,5 @@ build/
 .DS_Store
 /lib/
 *.jar
+*.zip
+core/deploy/plugin.xml

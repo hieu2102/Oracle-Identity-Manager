@@ -12,7 +12,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class AdapterUtil {
+public class AdapterUtils {
     private static final ODLLogger logger = ODLLogger.getODLLogger(CustomProvisioningAdapter.class.getName());
 
     private static final String[] HEADER_FIELDS = new String[]{"MessageId", "FromId", "FromName", "ToId", "ToName", "DateTime", "Signature"};

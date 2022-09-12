@@ -1,5 +1,9 @@
 package vn.bnh.oim.utils;
 
+import Thor.API.Base.tcBaseUtility;
+import Thor.API.Security.XLClientSecurityAssociation;
+import com.thortech.xl.dataaccess.tcDataBaseClient;
+import com.thortech.xl.dataaccess.tcDataProvider;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.platform.OIMClient;
 import oracle.iam.platform.Platform;
@@ -12,8 +16,8 @@ import java.util.Collections;
 import java.util.Hashtable;
 
 
-public class OIMUtil {
-    private static final ODLLogger logger = ODLLogger.getODLLogger(OIMUtil.class.getName());
+public class OIMUtils {
+    private static final ODLLogger logger = ODLLogger.getODLLogger(OIMUtils.class.getName());
     private static OIMClient oimClient = null;
 
     public static <T> T getService(Class<T> serviceClass) {
@@ -21,6 +25,16 @@ public class OIMUtil {
             return oimClient.getService(serviceClass);
         } else {
             return Platform.getService(serviceClass);
+        }
+    }
+
+    public static tcDataProvider getTcDataProvider() {
+        if (oimClient != null) {
+            XLClientSecurityAssociation.setClientHandle(oimClient);
+            return new tcDataBaseClient();
+        } else {
+            tcBaseUtility tcBaseUtil = Platform.getService(tcBaseUtility.class);
+            return tcBaseUtil.getDataBase();
         }
     }
 

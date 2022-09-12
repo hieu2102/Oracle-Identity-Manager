@@ -8,7 +8,7 @@ import org.junit.Test;
 import javax.security.auth.login.LoginException;
 import java.util.HashMap;
 
-public class ITResourceUtilTest {
+public class ITResourceUtilsTest {
     String hostname = "10.10.11.54";
     String port = "14000";
     String username = "xelsysadm";
@@ -16,8 +16,8 @@ public class ITResourceUtilTest {
 
     @Test
     public void getITRes() throws LoginException, tcAPIException, tcColumnNotFoundException, tcITResourceNotFoundException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        HashMap<String, String> itres = ITResourceUtil.getITResource("FlexCash");
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        HashMap<String, String> itres = ITResourceUtils.getITResource("FlexCash");
         itres.forEach((key, value) -> System.out.printf("%s=%s%n", key, value));
 
     }

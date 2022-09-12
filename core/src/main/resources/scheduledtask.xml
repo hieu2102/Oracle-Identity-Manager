@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <scheduledTasks xmlns="http://xmlns.oracle.com/oim/scheduler">
     <task>
-        <name>Update Accounts Roles</name>
-        <class>vn.bnh.oim.scheduledtasks.GrantO365LicenseByTitle</class>
-        <description>Update "Role" Field in Parent Process Form and Retry Provisioning Task</description>
+        <name>SmartFormUserReconciliation</name>
+        <class>vn.bnh.oim.scheduledtasks.accounts.SmartFormUserReconciliation</class>
         <retry>2</retry>
         <parameters>
-            <string-param required="true">Application Instance Name</string-param>
-            <string-param required="true">Parent Process Form's Role Field Name</string-param>
-            <string-param required="true">Role Field's Format</string-param>
-            <string-param required="true">Child Process Form's Name</string-param>
+<!--            <string-param required="true">License Matrix Lookup Table</string-param>-->
+            <string-param required="true">Application Name</string-param>
+<!--            <string-param required="true">Resource Object Name</string-param>-->
         </parameters>
     </task>
 </scheduledTasks>

@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import javax.security.auth.login.LoginException;
 
-public class LookupUtilTest {
+public class LookupUtilsTest {
     String hostname = "10.10.11.54";
     String port = "14000";
     String username = "xelsysadm";
@@ -19,25 +19,33 @@ public class LookupUtilTest {
 
     @Test
     public void addLookupValue() throws Exception {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        LookupUtil.setLookupValue("Lookup.GenericRest.Groups", "key", "value");
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        LookupUtils.setLookupValue("Lookup.GenericRest.Groups", "key", "value");
     }
 
     @Test
     public void getLookupValue() throws LoginException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        String output = LookupUtil.getLookupValue(lookupTable, lookupKey);
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        String output = LookupUtils.getLookupValue(lookupTable, lookupKey);
     }
 
     @Test
     public void removeLookupValue() throws LoginException, tcInvalidLookupException, tcInvalidValueException, tcAPIException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        LookupUtil.removeLookupEntryByKey("Lookup.GenericRest.Groups", "key");
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        LookupUtils.removeLookupEntryByKey("Lookup.GenericRest.Groups", "key");
     }
 
     @Test
     public void removeLookupValueByMeaning() throws LoginException, tcInvalidLookupException, tcAPIException, tcColumnNotFoundException, tcInvalidValueException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        LookupUtil.removeLookupEntryByValue(lookupTable, lookupValue);
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        LookupUtils.removeLookupEntryByValue(lookupTable, lookupValue);
+    }
+
+    @Test
+    public void testParseDate() {
+        String date = "20220819";
+        System.out.println(date.substring(0, 4));
+        System.out.println(date.substring(4, 6));
+        System.out.println(date.substring(6));
     }
 }

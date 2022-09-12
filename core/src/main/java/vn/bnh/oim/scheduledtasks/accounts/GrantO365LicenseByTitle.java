@@ -1,4 +1,4 @@
-package vn.bnh.oim.scheduledtasks;
+package vn.bnh.oim.scheduledtasks.accounts;
 
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
@@ -8,10 +8,10 @@ import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.provisioning.vo.ChildTableRecord;
 import oracle.iam.reconciliation.vo.Account;
 import oracle.iam.scheduler.vo.TaskSupport;
-import vn.bnh.oim.utils.ApplicationInstanceUtil;
-import vn.bnh.oim.utils.LookupUtil;
-import vn.bnh.oim.utils.ReconciliationUtil;
-import vn.bnh.oim.utils.UserUtil;
+import vn.bnh.oim.utils.ApplicationInstanceUtils;
+import vn.bnh.oim.utils.LookupUtils;
+import vn.bnh.oim.utils.ReconciliationUtils;
+import vn.bnh.oim.utils.UserUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,15 +25,16 @@ public class GrantO365LicenseByTitle extends TaskSupport {
     private HashMap<String, Object> taskParams;
     private String appInstName;
     private String resourceObjName;
+    private String fromDate;
     private static final String childFormName = "UD_O365_LIC";
     private static final String childFieldName = "UD_O365_LIC_LICENSE_NAME";
 
     private Set<User> getOIMUsersWithReconciledAccounts() {
-        Set<Account> reconciledAccounts = ReconciliationUtil.getReconciliationEvents(this.resourceObjName);
+        Set<Account> reconciledAccounts = ReconciliationUtils.getReconciliationEvents(this.resourceObjName, this.fromDate);
         logger.log(ODLLevel.INFO, "Reconciled Account List: {0}", reconciledAccounts.size());
         return reconciledAccounts.stream().map(x -> {
             try {
-                return UserUtil.getUser(x.getOwnerName());
+                return UserUtils.getUserByUserLogin(x.getOwnerName());
             } catch (UserLookupException | NoSuchUserException e) {
                 throw new RuntimeException(e);
             }
@@ -47,9 +48,9 @@ public class GrantO365LicenseByTitle extends TaskSupport {
         Set<User> oimUsers = getOIMUsersWithReconciledAccounts();
         for (User user : oimUsers) {
             String title = user.getAttribute("Title").toString();
-            String licenseToAdd = LookupUtil.getLookupValue(this.titleToLicenseLookupTable, title);
+            String licenseToAdd = LookupUtils.getLookupValue(this.titleToLicenseLookupTable, title);
             logger.log(ODLLevel.INFO, "Grant License {0} to User {1} with Title {2}", new Object[]{licenseToAdd, user.getLogin(), title});
-            oracle.iam.provisioning.vo.Account o365Account = ApplicationInstanceUtil.getUserPrimaryAccount(user.getId(), this.appInstName);
+            oracle.iam.provisioning.vo.Account o365Account = ApplicationInstanceUtils.getUserPrimaryAccount(user.getId(), this.appInstName);
             ArrayList<ChildTableRecord> grantedLicenses = o365Account.getAccountData().getChildData().get(childFormName);
             int userIsAlreadyGrantedLicense = (int) grantedLicenses.stream().filter(x -> x.getChildData().get(childFieldName).toString().equalsIgnoreCase(licenseToAdd)).count();
             if (userIsAlreadyGrantedLicense == 0) {
@@ -59,7 +60,7 @@ public class GrantO365LicenseByTitle extends TaskSupport {
                 childData.put(childFieldName, licenseToAdd);
                 newLicense.setChildData(childData);
                 grantedLicenses.add(newLicense);
-                ApplicationInstanceUtil.modifyAccount(o365Account);
+                ApplicationInstanceUtils.modifyAccount(o365Account);
                 logger.log(ODLLevel.INFO, "User {0} granted License {1}", new Object[]{user.getLogin(), licenseToAdd});
             } else {
                 logger.log(ODLLevel.INFO, "User {0} is already granted License {1}", new Object[]{user.getLogin(), licenseToAdd});
@@ -78,5 +79,6 @@ public class GrantO365LicenseByTitle extends TaskSupport {
         this.titleToLicenseLookupTable = this.taskParams.get("License Matrix Lookup Table").toString();
         this.appInstName = this.taskParams.get("Application Instance").toString();
         this.resourceObjName = this.taskParams.get("Resource Object Name").toString();
+        this.fromDate = this.taskParams.get("From Date").toString().isEmpty() ? null : this.taskParams.get("From Date").toString();
     }
 }

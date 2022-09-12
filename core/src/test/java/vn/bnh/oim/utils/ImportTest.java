@@ -17,49 +17,30 @@ public class ImportTest {
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";
-    String jarDir = "/tmp/adapters-1.0.jar";
-    String jarName = "adapters-1.0.jar";
+    String jarDir = "/tmp/core-1.0.jar";
+    String jarName = "core-1.0.jar";
 
     @Test
     public void importJar() throws LoginException, PlatformServiceException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        ServerUtil.uploadJar(jarDir, ServerUtil.JarType.JavaTasks);
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        ServerUtils.uploadJar(jarDir, ServerUtils.JarType.JavaTasks);
     }
 
     @Test
     public void deleteJar() throws LoginException, PlatformServiceException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        ServerUtil.deleteJar(jarName, ServerUtil.JarType.JavaTasks);
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        ServerUtils.deleteJar(jarName, ServerUtils.JarType.JavaTasks);
     }
 
     @Test
     public void register() throws LoginException {
-        OIMUtil.localInitialize(hostname,port,username,passwd);
-        ServerUtil.registerPlugin("/Users/hieunguyen/work/code/java/OIM/ABB/core/deploy/lib.zip");
+        OIMUtils.localInitialize(hostname,port,username,passwd);
+        ServerUtils.registerPlugin("/Users/hieunguyen/work/code/java/OIM/ABB/core/deploy/lib.zip");
     }
     @Test
     public void updateJar() throws LoginException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        ServerUtil.updateJar(jarDir, jarName, ServerUtil.JarType.JavaTasks);
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        ServerUtils.updateJar(jarDir, jarName, ServerUtils.JarType.JavaTasks);
     }
 
-    @Test
-    public void getAccounts() throws LoginException, UserNotFoundException, UserLookupException, GenericProvisioningException, NoSuchUserException {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        String userLogin = "MINHDUCTEST01";
-        String appInstName = "FlexCash";
-        Set<Account> accounts = ApplicationInstanceUtil.getAccountsForUser(userLogin, appInstName, ProvisioningConstants.ObjectStatus.PROVISIONED);
-        accounts.forEach(x -> {
-            System.out.println(x.getProcessInstanceKey());
-            System.out.println(x.getAccountID());
-            System.out.println(x.getAccountData().getData());
-        });
-    }
-
-    @Test
-    public void getAccountByProcInstKey() throws Exception {
-        OIMUtil.localInitialize(hostname, port, username, passwd);
-        long procInstKey = 163;
-        System.out.println(ApplicationInstanceUtil.getAccountByProcessInstKey(procInstKey).getAccountData().getData());
-    }
 }

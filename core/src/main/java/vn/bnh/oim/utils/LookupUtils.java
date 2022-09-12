@@ -13,9 +13,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class LookupUtil {
-    static tcLookupOperationsIntf tcLookupOperationsIntf = OIMUtil.getService(tcLookupOperationsIntf.class);
-    private static final ODLLogger logger = ODLLogger.getODLLogger(LookupUtil.class.getName());
+public class LookupUtils {
+    static tcLookupOperationsIntf tcLookupOperationsIntf = OIMUtils.getService(tcLookupOperationsIntf.class);
+    private static final ODLLogger logger = ODLLogger.getODLLogger(LookupUtils.class.getName());
 
     public static void setLookupValue(
             String lookupTable,

@@ -8,8 +8,8 @@ import Thor.API.tcResultSet;
 
 import java.util.HashMap;
 
-public class ITResourceUtil {
-    static tcITResourceInstanceOperationsIntf tcITResourceInstanceOperationsIntf = OIMUtil.getService(tcITResourceInstanceOperationsIntf.class);
+public class ITResourceUtils {
+    static tcITResourceInstanceOperationsIntf tcITResourceInstanceOperationsIntf = OIMUtils.getService(tcITResourceInstanceOperationsIntf.class);
     private static final String ITRES_KEY_FIELD = "IT Resources Type Parameter.Name";
     private static final String ITRES_VALUE_FIELD = "IT Resources Type Parameter Value.Value";
 

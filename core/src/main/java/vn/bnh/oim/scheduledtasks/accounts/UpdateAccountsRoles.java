@@ -1,4 +1,4 @@
-package vn.bnh.oim.scheduledtasks;
+package vn.bnh.oim.scheduledtasks.accounts;
 
 import Thor.API.Exceptions.tcAPIException;
 import Thor.API.Exceptions.tcColumnNotFoundException;
@@ -10,7 +10,7 @@ import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.vo.Account;
 import oracle.iam.provisioning.vo.ChildTableRecord;
 import oracle.iam.scheduler.vo.TaskSupport;
-import vn.bnh.oim.utils.ApplicationInstanceUtil;
+import vn.bnh.oim.utils.ApplicationInstanceUtils;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ public class UpdateAccountsRoles extends TaskSupport {
     public void execute(HashMap hashMap) throws Exception {
         this.scheduledTaskInputParams = hashMap;
         logger.log(ODLLevel.INFO, "Get all accounts in PROVISIONING states for Application Instance {0}", APP_INST_NAME);
-        Set<Account> accountList = ApplicationInstanceUtil.getProvisioningAccount(APP_INST_NAME);
+        Set<Account> accountList = ApplicationInstanceUtils.getProvisioningAccount(APP_INST_NAME);
         accountList.forEach(account -> {
             Map<String, Object> accountData = account.getAccountData().getData();
             Set<String> processedRoleData = new HashSet<>();
@@ -39,8 +39,8 @@ public class UpdateAccountsRoles extends TaskSupport {
             String updatedRoleData = String.join(",", processedRoleData);
             accountData.put(PARENT_PROCESS_FORM_ROLE_FIELD, updatedRoleData);
             try {
-                Account modifiedAccount = ApplicationInstanceUtil.updateAccountData(account, accountData);
-                ApplicationInstanceUtil.retryAccountProvision(modifiedAccount);
+                Account modifiedAccount = ApplicationInstanceUtils.updateAccountData(account, accountData);
+                ApplicationInstanceUtils.retryAccountProvision(modifiedAccount);
             } catch (GenericProvisioningException | AccountNotFoundException | tcAPIException |
                      tcColumnNotFoundException | tcTaskNotFoundException e) {
                 throw new RuntimeException(e);
