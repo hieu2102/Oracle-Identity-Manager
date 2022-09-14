@@ -14,6 +14,12 @@ public class SchedulerServiceUtilsTest {
     String passwd = "oracle_4U";
 
     @Test
+    public void execute() throws LoginException, SchedulerException, SchedulerAccessDeniedException {
+        OIMUtils.localInitialize(hostname, port, username, passwd);
+        SchedulerServiceUtils.executeJob("SmartForm User Recon");
+    }
+
+    @Test
     public void listJobs() throws LoginException, SchedulerException {
         OIMUtils.localInitialize(hostname, port, username, passwd);
         String[] a = SchedulerServiceUtils.listJobs();

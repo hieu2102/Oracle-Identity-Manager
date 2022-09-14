@@ -1,9 +1,9 @@
 package vn.bnh.oim.utils;
 
-import Thor.API.Base.tcBaseUtility;
 import Thor.API.Security.XLClientSecurityAssociation;
 import com.thortech.xl.dataaccess.tcDataBaseClient;
 import com.thortech.xl.dataaccess.tcDataProvider;
+import com.thortech.xl.dataobj.util.XLDatabase;
 import oracle.core.ojdl.logging.ODLLogger;
 import oracle.iam.platform.OIMClient;
 import oracle.iam.platform.Platform;
@@ -33,8 +33,7 @@ public class OIMUtils {
             XLClientSecurityAssociation.setClientHandle(oimClient);
             return new tcDataBaseClient();
         } else {
-            tcBaseUtility tcBaseUtil = Platform.getService(tcBaseUtility.class);
-            return tcBaseUtil.getDataBase();
+            return XLDatabase.getInstance().getDataBase();
         }
     }
 

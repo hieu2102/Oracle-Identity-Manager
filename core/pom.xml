@@ -43,6 +43,7 @@
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
+            <version>19.14.0.0</version>
         </dependency>
 
         <dependency>
@@ -114,6 +115,13 @@
             <version>1.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/xlDataObjectBeans.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.oim</groupId>
+            <artifactId>xlScheduler</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/xlScheduler.jar</systemPath>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
         <dependency>

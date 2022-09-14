@@ -78,7 +78,6 @@ public class ServerUtils {
         Set<JarElement> jarSet = new HashSet<>();
         jarSet.add(jarToUpload);
         platformUtilsService.updateJars(jarSet);
-
     }
 
     public static void registerPlugin(String pluginFilePath) {
