@@ -1,17 +1,15 @@
 package vn.bnh.oim.scheduledtasks.accounts;
 
 import com.thortech.xl.dataaccess.tcDataProvider;
-import oracle.iam.connectors.icfcommon.FieldMapping;
-import oracle.iam.connectors.icfcommon.ITResource;
-import oracle.iam.connectors.icfcommon.service.ConfigurationService;
+import oracle.iam.connectors.icfcommon.*;
+import oracle.iam.connectors.icfcommon.recon.ReconEvent;
+import oracle.iam.connectors.icfcommon.service.ReconciliationService;
 import oracle.iam.connectors.icfcommon.service.ServiceFactory;
-import oracle.iam.connectors.icfcommon.util.MapUtil;
 import oracle.iam.connectors.icfcommon.util.TypeUtil;
 import oracle.iam.provisioning.vo.ApplicationInstance;
 import oracle.iam.provisioning.vo.FormField;
 import oracle.iam.scheduler.vo.TaskSupport;
-import org.identityconnectors.common.security.GuardedString;
-import org.identityconnectors.framework.api.*;
+import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.common.objects.*;
 import vn.bnh.oim.utils.ApplicationInstanceUtils;
 import vn.bnh.oim.utils.OIMUtils;
@@ -22,16 +20,26 @@ import java.util.stream.Collectors;
 public class SmartFormUserReconciliation extends TaskSupport {
     private ConnectorFacade connectorFacade;
     private final ObjectClass objectClass = TypeUtil.convertObjectType("User");
-    //    private ReconciliationService reconService;
     private ApplicationInstance applicationInstance;
     private HashMap<String, Object> params;
     private ResultsHandler handler;
+    private final tcDataProvider dataProvider = OIMUtils.getTcDataProvider();
+    private final ObjectClass userRoleObjectClass = TypeUtil.convertObjectType("__ACCOUNT__~RoleIds");
+    private Lookup reconFieldMapping;
+    private IResourceConfig resourceConfig;
+    private ReconciliationService reconService;
+    private ReconciliationService.BatchReconciliationService batchReconService;
 
     @Override
     public void execute(HashMap params) throws Exception {
         this.params = params;
         this.setAttributes();
+        System.out.printf("[%s] execute __ACCOUNT__.SEARCHOP%n", this.getClass().getCanonicalName());
         connectorFacade.search(this.objectClass, null, this.handler, this.buildAttributesToGet());
+        System.out.printf("[%s] end __ACCOUNT__.SEARCHOP%n", this.getClass().getCanonicalName());
+        System.out.printf("[%s] execute reconciliation%n", this.getClass().getCanonicalName());
+        this.batchReconService.finish();
+
     }
 
     @Override
@@ -44,23 +52,13 @@ public class SmartFormUserReconciliation extends TaskSupport {
         try {
             String applicationName = this.params.get("Application Name").toString();
             this.applicationInstance = ApplicationInstanceUtils.getApplicationInstance(applicationName);
-            tcDataProvider dbProvider = OIMUtils.getTcDataProvider();
-            ConfigurationService configService = ServiceFactory.getService(ConfigurationService.class, dbProvider);
-            ITResource objITResource = configService.getITResource(applicationName);
-            ITResource conServer = configService.getITResource(objITResource.getValue("Connector Server Name"));
-            Map<String, String> resourceDetails = conServer.toMap();
-            String bundleName = resourceDetails.get("Host");
-            int port = Integer.parseInt(resourceDetails.get("Port"));
-            GuardedString key = new GuardedString(MapUtil.getRequiredValue(resourceDetails, "Key").toCharArray());
-            boolean useSSL = Boolean.parseBoolean(resourceDetails.get("UseSSL"));
-            int timeout = TypeUtil.convertValueType(MapUtil.getValue(resourceDetails, "Timeout", "0"), Integer.class);
-            RemoteFrameworkConnectionInfo remoteInfo = new RemoteFrameworkConnectionInfo(bundleName, port, key, useSSL, null, timeout);
-            ConnectorInfoManager infoManager = ConnectorInfoManagerFactory.getInstance().getRemoteManager(remoteInfo);
-            ConnectorKey connectorKey = new ConnectorKey("org.identityconnectors.genericrest", "12.3.0", "org.identityconnectors.genericrest.GenericRESTConnector");
-            ConnectorInfo connectorInfo = infoManager.findConnectorInfo(connectorKey);
-            APIConfiguration config = connectorInfo.createDefaultAPIConfiguration();
-            this.connectorFacade = ConnectorFacadeFactory.getInstance().newInstance(config);
-            this.handler = new CustomResultsHandler();
+            this.resourceConfig = ResourceConfigFactory.getResourceConfig(this.applicationInstance.getItResourceName(), this.applicationInstance.getObjectName(), applicationName, this.dataProvider);
+            this.connectorFacade = ConnectorFactory.createConnectorFacade(resourceConfig);
+            this.reconFieldMapping = resourceConfig.getObjectTypeLookup("User", "Recon Attribute Map", null);
+            this.reconService = ServiceFactory.getService(ReconciliationService.class, this.dataProvider);
+            this.batchReconService = this.reconService.createBatchReconciliationService(applicationName, resourceConfig.getReconBatchSize(), resourceConfig.isIgnoreEventDisabled(), resourceConfig.getReconThreadPoolConfig(), resourceConfig.getProcessReconEventTimeOut());
+            this.handler = new UserResultsHandler(batchReconService);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -70,22 +68,56 @@ public class SmartFormUserReconciliation extends TaskSupport {
     private OperationOptions buildAttributesToGet() {
         OperationOptionsBuilder oobuilder = new OperationOptionsBuilder();
         Set<String> fullValues = this.applicationInstance.getAccountForm().getFormFields().stream().map(FormField::getLabel).collect(Collectors.toSet());
-        Collection<String> atts = new HashSet();
-//
+        Collection<String> atts = new HashSet<>();
         for (String decode : fullValues) {
             FieldMapping mapping = new FieldMapping("", decode.replaceAll("\\s", ""));
             atts.add(mapping.getAttributeName());
         }
         oobuilder.setAttributesToGet(atts);
-        this.addCustomParams("Attributes List", new HashSet(atts));
+        this.addCustomParams("Attributes List", new HashSet<>(atts));
         return oobuilder.build();
     }
 
-    private class CustomResultsHandler implements ResultsHandler {
+    private class UserResultsHandler implements ResultsHandler {
+        private final ReconciliationService.BatchReconciliationService batchReconService;
+
+        private UserResultsHandler(ReconciliationService.BatchReconciliationService batchReconService) {
+            this.batchReconService = batchReconService;
+
+        }
+
         @Override
         public boolean handle(ConnectorObject connectorObject) {
-            System.out.printf("[%s] connector object: %s%n", this.getClass().getCanonicalName(), connectorObject);
-            return false;
+            try {
+                Uid uid = connectorObject.getUid();
+                Set<Attribute> attributes = new HashSet<>(connectorObject.getAttributes());
+                attributes.remove(uid);
+                System.out.printf("[%s] execute __ACCOUNT__~RoleIds.SEARCHOP%n", this.getClass().getCanonicalName());
+                Uid rolesList = connectorFacade.create(userRoleObjectClass, attributes, buildAttributesToGet());
+                System.out.printf("[%s] end __ACCOUNT__~RoleIds.SEARCHOP%n", this.getClass().getCanonicalName());
+                Attribute roleAttributes = parseResponse(rolesList.getUidValue());
+                attributes.add(roleAttributes);
+                attributes.add(uid);
+                ConnectorObject cobject = new ConnectorObject(connectorObject.getObjectClass(), attributes);
+                System.out.printf("[%s] User connector object %s: %s%n", this.getClass().getCanonicalName(), cobject.getObjectClass().getObjectClassValue(), cobject);
+                ReconEvent reconEvent = new ReconEvent(cobject, reconFieldMapping, resourceConfig.getITResource(), reconService.getDefaultDateFormat());
+                System.out.printf("[%s] reconciliation multivalued fields: %s", this.getClass().getCanonicalName(), reconEvent.getMultiFields());
+                this.batchReconService.addEvent(reconEvent);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
+        private Attribute parseResponse(String jsonString) {
+            jsonString = jsonString.replaceAll("^\\[\\{(.+)}]$", "$1");
+            AttributeBuilder roles = new AttributeBuilder();
+            roles.setName("RoleId");
+            Arrays.stream(jsonString.split("}\\s?,\\s?\\{")).forEach(x -> {
+                String value = Arrays.stream(x.split(",\\s?")).filter(attributeValue -> attributeValue.toUpperCase().contains("ID")).collect(Collectors.toList()).get(0).replaceAll(".+=", "");
+                roles.addValue(value);
+            });
+            return roles.build();
         }
     }
 }
