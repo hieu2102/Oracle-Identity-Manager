@@ -6,6 +6,7 @@ import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.provisioning.exception.GenericProvisioningException;
 import oracle.iam.provisioning.exception.UserNotFoundException;
 import oracle.iam.provisioning.vo.Account;
+import oracle.iam.provisioning.vo.ApplicationInstance;
 import org.junit.Test;
 
 import javax.security.auth.login.LoginException;
@@ -26,4 +27,12 @@ public class ApplicationInstanceUtilsTest {
 
     }
 
+    @Test
+    public void test() throws Exception {
+        OIMUtils.localInitialize(hostname, port, username, password);
+        ApplicationInstance appInst = ApplicationInstanceUtils.getApplicationInstance("O365AppIns");
+        appInst.getChildForms().get(0).getFormFields().get(0).getProperties().forEach((k, v) -> {
+            System.out.printf("%s=%s%n", k, v);
+        });
+    }
 }

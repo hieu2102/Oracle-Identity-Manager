@@ -1,9 +1,6 @@
 package vn.bnh.oim.utils;
 
-import Thor.API.Exceptions.tcAPIException;
-import Thor.API.Exceptions.tcColumnNotFoundException;
-import Thor.API.Exceptions.tcInvalidLookupException;
-import Thor.API.Exceptions.tcInvalidValueException;
+import Thor.API.Exceptions.*;
 import Thor.API.Operations.tcLookupOperationsIntf;
 import Thor.API.tcResultSet;
 import oracle.core.ojdl.logging.ODLLevel;
@@ -25,6 +22,16 @@ public class LookupUtils {
         tcLookupOperationsIntf.addLookupValue(lookupTable, code, meaning, "en", "US");
     }
 
+    public static void createLookupTable(String lookupTable) throws tcAPIException, tcDuplicateLookupCodeException {
+        try {
+            getLookupValues(lookupTable);
+        } catch (tcInvalidLookupException e) {
+            tcLookupOperationsIntf.addLookupCode(lookupTable);
+        } catch (tcColumnNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void removeLookupEntryByKey(
             String lookupTable,
             String code
@@ -40,8 +47,18 @@ public class LookupUtils {
         removeLookupEntryByKey(lookupTable, lookupCode);
     }
 
-    public static tcResultSet getLookupValues(String lookupTable) throws tcInvalidLookupException, tcAPIException {
-        return tcLookupOperationsIntf.getLookupValues(lookupTable);
+    public static HashMap<String, String> getLookupValues(String lookupTable) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException {
+        tcResultSet lookupCodeSet = tcLookupOperationsIntf.getLookupValues(lookupTable);
+        HashMap<String, String> existingEntries = new HashMap<>();
+        if (lookupCodeSet.getTotalRowCount() > 0) {
+            for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
+                lookupCodeSet.goToRow(i);
+                String lookupKey = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
+                String lookupValue = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode");
+                existingEntries.put(lookupKey, lookupValue);
+            }
+        }
+        return existingEntries;
     }
 
     public static void updateLookupValue(
@@ -57,16 +74,7 @@ public class LookupUtils {
             HashMap<String, String> entries
     ) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException, tcInvalidValueException {
 //        get existing lookup entries
-        tcResultSet lookupCodeSet = getLookupValues(lookupTable);
-        HashMap<String, String> existingEntries = new HashMap<>();
-        if (lookupCodeSet.getTotalRowCount() > 0) {
-            for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
-                lookupCodeSet.goToRow(i);
-                String lookupKey = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
-                String lookupValue = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode");
-                existingEntries.put(lookupKey, lookupValue);
-            }
-        }
+        HashMap<String, String> existingEntries = getLookupValues(lookupTable);
         for (Map.Entry<String, String> entry : entries.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -81,15 +89,13 @@ public class LookupUtils {
         }
     }
 
-    public static String getLookupCode(String lookupTable, String meaning) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException {
-        tcResultSet lookupCodeSet = getLookupValues(lookupTable);
-        if (lookupCodeSet.getTotalRowCount() > 0) {
-            for (int i = 0; i < lookupCodeSet.getTotalRowCount(); i++) {
-                lookupCodeSet.goToRow(i);
-                logger.log(ODLLevel.INFO, "Lookup Entry: {0}", lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode"));
-                if (meaning.equals(lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode"))) {
-                    return lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
-                }
+    public static String getLookupCode(
+            String lookupTable,
+            String meaning
+    ) throws tcInvalidLookupException, tcAPIException, tcColumnNotFoundException {
+        for (Map.Entry<String, String> et : getLookupValues(lookupTable).entrySet()) {
+            if (et.getValue().equals(meaning)) {
+                return et.getKey();
             }
         }
         return null;
