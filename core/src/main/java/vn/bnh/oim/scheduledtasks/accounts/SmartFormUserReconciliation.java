@@ -7,7 +7,6 @@ import oracle.iam.connectors.icfcommon.service.ReconciliationService;
 import oracle.iam.connectors.icfcommon.service.ServiceFactory;
 import oracle.iam.connectors.icfcommon.util.TypeUtil;
 import oracle.iam.provisioning.vo.ApplicationInstance;
-import oracle.iam.provisioning.vo.FormField;
 import oracle.iam.scheduler.vo.TaskSupport;
 import org.identityconnectors.framework.api.ConnectorFacade;
 import org.identityconnectors.framework.common.objects.*;
@@ -67,14 +66,17 @@ public class SmartFormUserReconciliation extends TaskSupport {
 
     private OperationOptions buildAttributesToGet() {
         OperationOptionsBuilder oobuilder = new OperationOptionsBuilder();
-        Set<String> fullValues = this.applicationInstance.getAccountForm().getFormFields().stream().map(FormField::getLabel).collect(Collectors.toSet());
-        Collection<String> atts = new HashSet<>();
-        for (String decode : fullValues) {
-            FieldMapping mapping = new FieldMapping("", decode.replaceAll("\\s", ""));
+        Collection<String> fullValues = this.reconFieldMapping.toMap().values();
+        Collection<String> atts = new HashSet();
+        Iterator var5 = fullValues.iterator();
+
+        while (var5.hasNext()) {
+            String decode = (String) var5.next();
+            FieldMapping mapping = new FieldMapping("", decode);
             atts.add(mapping.getAttributeName());
         }
         oobuilder.setAttributesToGet(atts);
-        this.addCustomParams("Attributes List", new HashSet<>(atts));
+        this.addCustomParams("Attributes List", new HashSet(atts));
         return oobuilder.build();
     }
 
@@ -93,7 +95,9 @@ public class SmartFormUserReconciliation extends TaskSupport {
                 Set<Attribute> attributes = new HashSet<>(connectorObject.getAttributes());
                 attributes.remove(uid);
                 System.out.printf("[%s] execute __ACCOUNT__~RoleIds.SEARCHOP%n", this.getClass().getCanonicalName());
-                Uid rolesList = connectorFacade.create(userRoleObjectClass, attributes, buildAttributesToGet());
+                attributes.forEach(attribute -> {
+                });
+                Uid rolesList = connectorFacade.create(userRoleObjectClass, attributes.stream().filter(attr -> attr.getName().equalsIgnoreCase("__NAME__")).collect(Collectors.toSet()), buildAttributesToGet());
                 System.out.printf("[%s] end __ACCOUNT__~RoleIds.SEARCHOP%n", this.getClass().getCanonicalName());
                 Attribute roleAttributes = parseResponse(rolesList.getUidValue());
                 attributes.add(roleAttributes);
