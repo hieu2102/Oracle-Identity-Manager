@@ -65,8 +65,12 @@ public class UserUtils {
         return new String(password);
     }
 
-    public static User getUserByUserLogin(String userLogin) throws UserLookupException, NoSuchUserException {
-        return userService.getDetails(userLogin, new HashSet<>(), true);
+    public static User getUserByUserLogin(String userLogin)  {
+        try {
+            return userService.getDetails(userLogin, new HashSet<>(), true);
+        } catch (NoSuchUserException | UserLookupException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static User getUserByKey(String userKey) throws UserLookupException, NoSuchUserException {

@@ -43,13 +43,7 @@ public class GrantO365LicenseByTitle extends TaskSupport {
     private Set<User> getOIMUsersWithReconciledAccounts() {
         Set<Account> reconciledAccounts = ReconciliationUtils.getReconciliationEvents(this.resourceObjName, this.fromDate);
         logger.log(ODLLevel.INFO, "Reconciled Account List: {0}", reconciledAccounts.size());
-        return reconciledAccounts.stream().map(x -> {
-            try {
-                return UserUtils.getUserByUserLogin(x.getOwnerName());
-            } catch (UserLookupException | NoSuchUserException e) {
-                throw new RuntimeException(e);
-            }
-        }).collect(Collectors.toSet());
+        return reconciledAccounts.stream().map(x -> UserUtils.getUserByUserLogin(x.getOwnerName())).collect(Collectors.toSet());
     }
 
     private void grantLicense(

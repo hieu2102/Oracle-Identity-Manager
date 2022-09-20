@@ -3,6 +3,7 @@ package vn.bnh.oim.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import oracle.core.ojdl.logging.ODLLevel;
 import oracle.core.ojdl.logging.ODLLogger;
+import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.reconciliation.api.*;
 import oracle.iam.reconciliation.vo.*;
 
@@ -28,26 +29,34 @@ public class ReconciliationUtils {
         date.set(Calendar.MILLISECOND, 0);
         if (fromDate != null) {
             date.set(Calendar.YEAR, Integer.parseInt(fromDate.substring(0, 4)));
-            date.set(Calendar.MONTH, Integer.parseInt(fromDate.substring(4, 6)));
+            date.set(Calendar.MONTH, Integer.parseInt(fromDate.substring(4, 6)) - 1);
             date.set(Calendar.DATE, Integer.parseInt(fromDate.substring(6)));
         }
         ReconSearchCriteria sc = new ReconSearchCriteria(ReconSearchCriteria.Operator.AND);
         sc.addExpression(EventConstants.RECON_EVENT_RSRC_NAME, resourceObjName, ReconSearchCriteria.Operator.EQUAL);
         sc.addExpression(EventConstants.RECON_EVENT_STATUS, eventStatus, ReconSearchCriteria.Operator.EQUAL);
         sc.addExpression(EventConstants.RECON_EVENT_CREATETIMESTMP, date.getTime(), ReconSearchCriteria.Operator.GREATER_THAN);
+        System.out.println(date.getTime());
         LOGGER.log(ODLLevel.INFO, "Generate Search Criteria for {0}, event status: {1}, time: {2}", new Object[]{resourceObjName, eventStatus, date.getTime()});
         return sc;
     }
 
-    public static Set<User> getReconciledUsers(String resourceName, String fromDate) {
+    public static Set<User> getReconciledUsers(
+            String resourceName,
+            String fromDate
+    ) {
         Vector resultOrder = new Vector<>();
         resultOrder.add(EventConstants.RECON_EVENT_KEY);
         ReconSearchCriteria searchCreated = generateSearchCriteria(resourceName, EventConstants.STATUS_CREATE_SUCCESS, fromDate);
         List<ReconEvent> createdEvents = eventMgmtService.search(searchCreated, resultOrder, false, 0, 100);
-        return createdEvents.stream().map(event -> eventMgmtService.getLinkedUserForEvent(event.getReKey())).collect(Collectors.toSet());
+        LOGGER.log(ODLLevel.INFO, "event list size: {0}", createdEvents.size());
+        return createdEvents.stream().map(event -> eventMgmtService.getLinkedUserForEvent(event.getReKey())).map(user -> UserUtils.getUserByUserLogin(user.getLogin())).collect(Collectors.toSet());
     }
 
-    public static Set<Account> getReconciliationEvents(String resourceObjName, String fromDate) {
+    public static Set<Account> getReconciliationEvents(
+            String resourceObjName,
+            String fromDate
+    ) {
         LOGGER.log(ODLLevel.INFO, "Get Reconciliation Events for {0}", resourceObjName);
         Vector resultOrder = new Vector<>();
         resultOrder.add(EventConstants.RECON_EVENT_KEY);
@@ -63,7 +72,10 @@ public class ReconciliationUtils {
         return createdEvents.stream().map(event -> eventMgmtService.getLinkedAccountForEvent(event.getReKey())).collect(Collectors.toSet());
     }
 
-    public static void reconcileAccount(String resourceObjName, JsonNode accountData) {
+    public static void reconcileAccount(
+            String resourceObjName,
+            JsonNode accountData
+    ) {
         EventAttributes attrs = new EventAttributes();
         Map<String, Object> reconData = new HashMap<>();
         accountData.fieldNames().forEachRemaining(field -> {
@@ -73,7 +85,10 @@ public class ReconciliationUtils {
         reconOperationsService.createReconciliationEvent(resourceObjName, reconData, attrs);
     }
 
-    public static ReconciliationResult batchReconcileAccount(String resourceObjName, JsonNode data) {
+    public static ReconciliationResult batchReconcileAccount(
+            String resourceObjName,
+            JsonNode data
+    ) {
         InputData[] input = new InputData[data.size()];
         for (int i = 0; i < input.length; i++) {
             JsonNode accountData = data.get(i);

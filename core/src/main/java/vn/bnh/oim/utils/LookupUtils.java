@@ -56,6 +56,7 @@ public class LookupUtils {
                 String lookupKey = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Code Key");
                 String lookupValue = lookupCodeSet.getStringValue("Lookup Definition.Lookup Code Information.Decode");
                 existingEntries.put(lookupKey, lookupValue);
+
             }
         }
         return existingEntries;

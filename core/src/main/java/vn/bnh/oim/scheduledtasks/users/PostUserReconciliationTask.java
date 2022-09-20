@@ -1,8 +1,9 @@
 package vn.bnh.oim.scheduledtasks.users;
 
+import oracle.iam.connectors.icfcommon.recon.SearchReconDeleteTask;
 import oracle.iam.identity.exception.SearchKeyNotUniqueException;
 import oracle.iam.identity.exception.UserManagerException;
-import oracle.iam.reconciliation.vo.User;
+import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.scheduler.vo.TaskSupport;
 import vn.bnh.oim.utils.NotificationUtils;
 import vn.bnh.oim.utils.ReconciliationUtils;
@@ -27,6 +28,7 @@ public class PostUserReconciliationTask extends TaskSupport {
         userList = userList.stream().filter(user -> user.getPasswordCreationDate() == null).collect(Collectors.toSet());
         userList.forEach(user -> {
             try {
+                user.getPasswordGenerated();
                 String userPassword = UserUtils.setUserPassword(user.getLogin());
                 NotificationUtils.sendUserCreatedNotification(user, userPassword);
             } catch (UserManagerException | SearchKeyNotUniqueException e) {
