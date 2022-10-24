@@ -62,6 +62,13 @@ public class ApplicationInstanceUtils {
 //        return null;
     }
 
+    public static List<Account> getUserPrimaryAccounts(
+            String userID
+    ) throws UserNotFoundException, GenericProvisioningException {
+        return provisioningService.getAccountsProvisionedToUser(userID, true).stream().filter(account -> account.getAccountType().equals(Account.ACCOUNT_TYPE.Primary)).collect(Collectors.toList());
+    }
+
+
     public static Account getUserPrimaryAccount(
             String userID,
             String appInstName
@@ -89,6 +96,10 @@ public class ApplicationInstanceUtils {
         modifiedAccount.setAppInstance(account.getAppInstance());
         modifyAccount(modifiedAccount);
         return modifiedAccount;
+    }
+
+    public static void disableAccount(Account account) throws GenericProvisioningException, ImproperAccountStateException, AccountNotFoundException {
+        provisioningService.disable(Long.parseLong(account.getAccountID()));
     }
 
     public static void modifyAccount(Account updatedAccount) throws GenericProvisioningException, AccountNotFoundException {
