@@ -6,7 +6,7 @@ import org.junit.Test;
 import javax.security.auth.login.LoginException;
 
 public class ImportTest {
-    String hostname = "10.10.11.54";
+    String hostname = "oim.bnh.vn";
     String port = "14000";
     String username = "xelsysadm";
     String passwd = "oracle_4U";

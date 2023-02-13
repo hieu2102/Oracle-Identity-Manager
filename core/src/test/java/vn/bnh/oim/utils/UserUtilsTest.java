@@ -13,10 +13,11 @@ public class UserUtilsTest {
 
     @Test
     public void resetPassword() throws LoginException, UserManagerException {
-        OIMUtils.localInitialize(hostname, port, username, passwd);
+//        OIMUtils.localInitialize(hostname, port, username, passwd);
 //        String password = UserUtils.setUserPassword("TAMNTH@ABBANK.VN");
-        User user = UserUtils.getUserByUserLogin("TAMNTH@ABBANK.VN");
-        System.out.println(user.getPasswordCreationDate());
+//        User user = UserUtils.getUserByUserLogin("TAMNTH@ABBANK.VN");
+        System.out.println(passwd.replaceAll(".+(.{3})", "$1"));
+//        System.out.println(user.getPasswordCreationDate());
 //        NotificationUtils.sendUserCreatedNotification(UserUtils.getUserByUserLogin("TAMNTH@ABBANK.VN"), password);
     }
 

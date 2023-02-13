@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <oimplugins>
     <plugins pluginpoint="oracle.iam.scheduler.vo.TaskSupport">
-        <plugin pluginclass="vn.bnh.oim.scheduledtasks.accounts.GrantO365LicenseByTitle" version="1.0" name="GrantO365LicenseByTitle"/>
+        <plugin pluginclass="vn.bnh.oim.scheduledtasks.users.HRMAllUserReconTask" version="1.0" name="HRMAllUserReconTask"/>
     </plugins>
-    <plugins pluginpoint="oracle.iam.identity.usermgmt.api.UserNamePolicy">
-        <plugin pluginclass="vn.bnh.oim.policy.UsernameGenerationPolicy" version="1.0" name="UsernameGenerationPolicy"/>
-    </plugins>
+<!--    <plugins pluginpoint="oracle.iam.identity.usermgmt.api.UserNamePolicy">-->
+<!--        <plugin pluginclass="vn.bnh.oim.policy.UsernameGenerationPolicy" version="1.0" name="UsernameGenerationPolicy"/>-->
+<!--    </plugins>-->
 </oimplugins>

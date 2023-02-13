@@ -2,6 +2,7 @@ package vn.bnh.oim.utils;
 
 import oracle.iam.identity.exception.*;
 import oracle.iam.identity.usermgmt.api.UserManager;
+import oracle.iam.identity.usermgmt.api.UserManagerConstants;
 import oracle.iam.identity.usermgmt.vo.User;
 import oracle.iam.passwordmgmt.api.PasswordMgmtService;
 import oracle.iam.passwordmgmt.vo.PasswordPolicyInfo;
